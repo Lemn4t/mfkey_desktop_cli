@@ -1,0 +1,120 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.os_name }} / ${{ matrix.arch }})
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      endsWith(github.event.head_commit.message, '--build')
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os_name: windows
+            arch: x86_64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin_ext: ".exe"
+          - os_name: linux
+            arch: x86_64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin_ext: ""
+            # Intel
+          - os_name: macos
+            arch: x86_64
+            runner: macos-13
+            target: x86_64-apple-darwin
+            bin_ext: ""
+            # Apple Silicon
+          - os_name: macos
+            arch: aarch64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            bin_ext: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          BIN_NAME="mfkey_desktop_cli${{ matrix.bin_ext }}"
+          OUT_NAME="mfkey_desktop_cli_${{ matrix.os_name }}_${{ matrix.arch }}${{ matrix.bin_ext }}"
+          cp "target/${{ matrix.target }}/release/${BIN_NAME}" "dist/${OUT_NAME}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mfkey_desktop_cli_${{ matrix.os_name }}_${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      endsWith(github.event.head_commit.message, '--build')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Read version from Cargo.toml
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep -m1 '^version' Cargo.toml | sed -E 's/version *= *"([^"]+)"/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Detected version: $VERSION"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten artifacts
+        shell: bash
+        run: |
+          mkdir -p release
+          find artifacts -type f -exec cp {} release/ \;
+          ls -la release/
+
+      - name: Create / update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          files: release/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
