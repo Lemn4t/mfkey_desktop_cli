@@ -46,10 +46,21 @@ Download the binary for your platform, and you can run it immediately — you do
 mfkey_desktop_cli <input_file>
 ```
 
-Пример:
+Example:
 
 ```bash
 mfkey_desktop_cli .nested.log
+```
+
+> [!NOTE]
+> **Linux / macOS:** before the first run, make the binary executable:
+>
+> ```bash
+> chmod +x mfkey_desktop_cli
+> ```
+>
+> On macOS you may also need to allow it in **System Settings → Privacy & Security** if Gatekeeper blocks it.
+
 ```
 
 ### Input file format
@@ -57,14 +68,18 @@ mfkey_desktop_cli .nested.log
 **Nested (format Flipper Zero):**
 
 ```
+
 Sec 0 key B cuid da7d3c2e nt0 b07cef37 ks0 54a0efed par0 1001 nt1 224737c4 ks1 ce956841 par1 1000 dist 0
+
 ```
 
 **MFKey32 (format Flipper Zero):**
 
 ```
+
 Sec 0 key A cuid 801aa11c nt0 e58455e4 nr0 761ff4ec ar0 162122ec nt1 20782e85 nr1 ecb6f04f ar1 bf19891b
-```
+
+````
 
 The program automatically detects the type of attack based on the contents of the string. The found keys are saved in `mf_classic_dict_user.nfc`.
 
@@ -78,7 +93,7 @@ You will need [Rust toolchain](https://rustup.rs/) and the C compiler (MSVC/GCC 
 git clone https://github.com/Lemn4t/mfkey_desktop_cli.git
 cd mfkey_desktop_cli
 cargo build --release
-```
+````
 
 The finished binary will appear in `target/release/`.
 
