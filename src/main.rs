@@ -27,21 +27,28 @@ struct Args {
 }
 
 fn print_usage(program: &str) {
-    println!("{} - MIFARE Classic Key Recovery Tool", MFKEY_NAME);
+    println!(
+        "{} - Flipper Zero :: MIFARE Classic Key Recovery Tool",
+        MFKEY_NAME
+    );
     println!("Version {}\n", MFKEY_VERSION);
     println!(
-        "Usage: {} [OPTIONS] <nonces.log> [output_keys.txt] [dict_output_dir]\n",
+        "Usage: {} [OPTIONS] <.nested.log/.mfkey32.log> [output_keys.nfc] [dict_output_dir]\n",
         program
     );
     println!("ARGUMENTS:");
-    println!("  nonces.log        Input file containing nonces from nested attack");
-    println!("  output_keys.txt   Output file for recovered keys (default: found_keys.txt)");
     println!(
-        "  dict_output_dir   Directory for candidate key dictionaries (default: current dir)\n"
+        "  .nested.log/.mfkey32.log        Input file containing one-time values for the attack"
+    );
+    println!(
+        "  output_keys.txt                 Output file for recovered keys (default: mf_classic_dict_user.nfc)"
+    );
+    println!(
+        "  dict_output_dir                 Directory for candidate key dictionaries (default: current dir)\n"
     );
     println!("OPTIONS:");
     println!("  -h, --help        Show this help message and exit");
-    println!("  --no-ui           Disable pixel UI and use simple text output");
+    println!("  --no-ui           Disable UI and use simple text output");
     println!("  --version         Show version information");
 }
 
@@ -59,8 +66,7 @@ fn parse_args() -> Option<Args> {
         }
         if a == "--version" {
             println!("{} version {}", MFKEY_NAME, MFKEY_VERSION);
-            println!("MIFARE Classic Key Recovery Tool");
-            println!("Based on Flipper Zero mfkey implementation");
+            println!("Flipper Zero :: MIFARE Classic Key Recovery Tool");
             return None;
         }
     }
@@ -84,7 +90,7 @@ fn parse_args() -> Option<Args> {
     let output_file = positionals
         .get(1)
         .cloned()
-        .unwrap_or_else(|| "found_keys.txt".to_string());
+        .unwrap_or_else(|| "mf_classic_dict_user.nfc".to_string());
     let dict_output_dir = positionals.get(2).cloned();
 
     Some(Args {
