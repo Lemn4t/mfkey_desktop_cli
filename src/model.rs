@@ -20,6 +20,7 @@ impl MfClassicKey {
 #[derive(Debug, Clone)]
 pub struct Nonce {
     pub attack: AttackType,
+    pub key_idx: u8,
     pub uid: u32,
     pub nt0: u32,
     pub nt1: u32,
@@ -43,6 +44,7 @@ impl Nonce {
     pub fn to_c(&self) -> CNonce {
         CNonce {
             attack: self.attack as i32,
+            key_idx: self.key_idx,
             uid: self.uid,
             nt0: self.nt0,
             nt1: self.nt1,
@@ -74,6 +76,7 @@ impl Default for Nonce {
     fn default() -> Self {
         Nonce {
             attack: AttackType::Mfkey32,
+            key_idx: 0,
             uid: 0,
             nt0: 0,
             nt1: 0,

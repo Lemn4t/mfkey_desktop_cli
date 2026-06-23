@@ -111,7 +111,7 @@ fn save_keys_to_file(path: &str, keys: &[MfClassicKey]) -> std::io::Result<()> {
     Ok(())
 }
 
-fn save_candidate_dict(uid: u32, keys: &[MfClassicKey], output_dir: Option<&str>) -> String {
+fn save_candidate_dict(uid: u32, keys: &[(u8, MfClassicKey)], output_dir: Option<&str>) -> String {
     let filename = format!("mf_classic_dict_{:08x}.nfc", uid);
     let path = match output_dir {
         Some(dir) => Path::new(dir).join(&filename),
@@ -120,8 +120,8 @@ fn save_candidate_dict(uid: u32, keys: &[MfClassicKey], output_dir: Option<&str>
     let path_str = path.to_string_lossy().to_string();
 
     if let Ok(mut file) = File::create(&path) {
-        for k in keys {
-            let _ = writeln!(file, "{}", k.to_hex());
+        for (key_idx, k) in keys {
+            let _ = writeln!(file, "{:02X}{}", key_idx, k.to_hex());
         }
     } else {
         eprintln!("Failed to create dictionary file: {}", path_str);
@@ -184,7 +184,7 @@ fn main() {
 
     let mut attack_state = AttackState::new(Arc::clone(&ui), Arc::clone(&stop), nonces.len());
 
-    let mut save_dict = |uid: u32, keys: &[MfClassicKey], dir: Option<&str>| -> String {
+    let mut save_dict = |uid: u32, keys: &[(u8, MfClassicKey)], dir: Option<&str>| -> String {
         save_candidate_dict(uid, keys, dir)
     };
 

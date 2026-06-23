@@ -58,6 +58,11 @@ fn parse_mfkey32_line(tokens: &[&str]) -> Option<Nonce> {
 }
 
 fn parse_nested_line(tokens: &[&str]) -> Option<Nonce> {
+    let sector_num: i64 = token_after(tokens, "Sec").and_then(|s| s.parse::<i64>().ok())?;
+    let key_type: &str = token_after(tokens, "key")?;
+    let key_b = key_type.eq_ignore_ascii_case("B");
+    let key_idx = (sector_num * 2 + if key_b { 1 } else { 0 }) as u8;
+
     let uid = token_after(tokens, "cuid").and_then(parse_hex_u32)?;
     let nt0 = token_after(tokens, "nt0").and_then(parse_hex_u32)?;
     let ks1_1_enc = token_after(tokens, "ks0").and_then(parse_hex_u32)?;
@@ -69,6 +74,7 @@ fn parse_nested_line(tokens: &[&str]) -> Option<Nonce> {
 
     let mut nonce = Nonce {
         attack: AttackType::StaticEncrypted,
+        key_idx, // <-- ВЫЧИСЛЕННЫЙ key_idx
         uid,
         nt0,
         nt1: 0,

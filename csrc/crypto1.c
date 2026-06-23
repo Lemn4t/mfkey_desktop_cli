@@ -14,7 +14,7 @@
   ((x) = ((x) >> 8 & 0xff00ff) | ((x) & 0xff00ff) << 8,                        \
    (x) = (x) >> 16 | (x) << 16)
 
-static const int MSB_LIMIT = 16;
+#define MSB_LIMIT_BASE 16
 
 struct Crypto1State {
   uint32_t odd, even;
@@ -291,7 +291,7 @@ static inline int check_state(struct Crypto1State *t, RecoverCtx *ctx) {
           (local_parity_keystream_bits == n->par_1)) {
         crypto1_get_lfsr(t, key6);
         if (ctx->cb->candidate_key)
-          ctx->cb->candidate_key(key6, ctx->cb->user);
+          ctx->cb->candidate_key(key6, n->key_idx, ctx->cb->user);
       }
     }
   }
@@ -463,7 +463,7 @@ static int calculate_msb_tables(int oks, int eks, int msb_round,
                                 struct Msb *odd_msbs, struct Msb *even_msbs,
                                 unsigned int *temp_states_odd,
                                 unsigned int *temp_states_even, unsigned int in,
-                                uint32_t uid) {
+                                uint32_t uid, int MSB_LIMIT) {
 
   unsigned int msb_head = (MSB_LIMIT * msb_round);
   unsigned int msb_tail = (MSB_LIMIT * (msb_round + 1));
@@ -573,10 +573,15 @@ bool crypto1_recover(const CNonce *n, uint32_t ks2, uint32_t in,
                      const CCallbacks *cb) {
   bool found = false;
 
+  int MSB_LIMIT = MSB_LIMIT_BASE;
+  if (n->attack == ATTACK_STATIC_ENCRYPTED) {
+    MSB_LIMIT = MSB_LIMIT_BASE / 2; // 16 -> 8
+  }
+
   struct Msb *odd_msbs =
-      (struct Msb *)malloc(sizeof(struct Msb) * MSB_LIMIT * 2);
+      (struct Msb *)malloc(sizeof(struct Msb) * MSB_LIMIT_BASE * 2);
   struct Msb *even_msbs =
-      (struct Msb *)malloc(sizeof(struct Msb) * MSB_LIMIT * 2);
+      (struct Msb *)malloc(sizeof(struct Msb) * MSB_LIMIT_BASE * 2);
   unsigned int *temp_states_odd =
       (unsigned int *)malloc(sizeof(unsigned int) * 1280);
   unsigned int *temp_states_even =
@@ -615,7 +620,7 @@ bool crypto1_recover(const CNonce *n, uint32_t ks2, uint32_t in,
 
     if (calculate_msb_tables(oks, eks, msb, &ctx, states_buffer, odd_msbs,
                              even_msbs, temp_states_odd, temp_states_even, in,
-                             n->uid)) {
+                             n->uid, MSB_LIMIT)) {
       found = true;
       break;
     }

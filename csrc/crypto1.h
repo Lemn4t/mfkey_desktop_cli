@@ -18,6 +18,7 @@ typedef enum {
 
 typedef struct {
   int32_t attack;
+  uint8_t key_idx;
   uint32_t uid;
   uint32_t nt0;
   uint32_t nt1;
@@ -39,7 +40,7 @@ typedef struct {
 
 typedef struct {
   void (*found_key)(const uint8_t *key6, void *user);
-  void (*candidate_key)(const uint8_t *key6, void *user);
+  void (*candidate_key)(const uint8_t *key6, uint8_t key_idx, void *user);
   void (*progress)(uint32_t msb_round, uint32_t total_rounds,
                    float stage_progress, uint32_t uid, void *user);
   int (*should_stop)(void *user);

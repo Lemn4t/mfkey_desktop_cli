@@ -14,6 +14,7 @@ pub enum AttackType {
 #[derive(Debug, Clone, Copy)]
 pub struct CNonce {
     pub attack: i32,
+    pub key_idx: u8,
     pub uid: u32,
     pub nt0: u32,
     pub nt1: u32,
@@ -37,6 +38,7 @@ impl Default for CNonce {
     fn default() -> Self {
         CNonce {
             attack: AttackType::StaticEncrypted as i32,
+            key_idx: 0,
             uid: 0,
             nt0: 0,
             nt1: 0,
@@ -59,7 +61,7 @@ impl Default for CNonce {
 #[repr(C)]
 pub struct CCallbacks {
     pub found_key: Option<extern "C" fn(key6: *const u8, user: *mut c_void)>,
-    pub candidate_key: Option<extern "C" fn(key6: *const u8, user: *mut c_void)>,
+    pub candidate_key: Option<extern "C" fn(key6: *const u8, key_idx: u8, user: *mut c_void)>,
     pub progress: Option<
         extern "C" fn(
             msb_round: u32,

@@ -16,14 +16,14 @@ extern "C" fn cb_found_key(key6: *const u8, user: *mut c_void) {
     }
 }
 
-extern "C" fn cb_candidate_key(key6: *const u8, user: *mut c_void) {
+extern "C" fn cb_candidate_key(key6: *const u8, key_idx: u8, user: *mut c_void) {
     if key6.is_null() || user.is_null() {
         return;
     }
     let state = unsafe { &mut *(user as *mut AttackState) };
     let slice = unsafe { slice::from_raw_parts(key6, MF_CLASSIC_KEY_SIZE) };
     let key = MfClassicKey::from_slice(slice);
-    state.add_candidate_key(key);
+    state.add_candidate_key(key_idx, key);
 }
 
 extern "C" fn cb_progress(
@@ -88,7 +88,7 @@ pub fn run_attack(
     state: &mut AttackState,
     nonces: &[Nonce],
     dict_output_dir: Option<&str>,
-    save_dict: &mut dyn FnMut(u32, &[MfClassicKey], Option<&str>) -> String,
+    save_dict: &mut dyn FnMut(u32, &[(u8, MfClassicKey)], Option<&str>) -> String,
 ) -> (usize, Vec<DictOutput>) {
     let total_nonces = nonces.len();
     state.global_total_nonces = total_nonces;

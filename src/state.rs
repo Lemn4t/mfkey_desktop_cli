@@ -8,9 +8,8 @@ pub struct AttackState {
     pub found_keys: Vec<MfClassicKey>,
     found_set: HashSet<MfClassicKey>,
 
-    pub candidate_keys: Vec<MfClassicKey>,
-    candidate_set: HashSet<MfClassicKey>,
-
+    pub candidate_keys: Vec<(u8, MfClassicKey)>,
+    candidate_set: HashSet<(u8, MfClassicKey)>,
     pub stop: Arc<AtomicBool>,
 
     pub global_current_nonce: usize,
@@ -42,9 +41,9 @@ impl AttackState {
         }
     }
 
-    pub fn add_candidate_key(&mut self, key: MfClassicKey) -> bool {
-        if self.candidate_set.insert(key) {
-            self.candidate_keys.push(key);
+    pub fn add_candidate_key(&mut self, key_idx: u8, key: MfClassicKey) -> bool {
+        if self.candidate_set.insert((key_idx, key)) {
+            self.candidate_keys.push((key_idx, key));
             true
         } else {
             false
