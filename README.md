@@ -6,7 +6,7 @@
 
 [![Latest Release](https://img.shields.io/github/v/release/Lemn4t/mfkey_desktop_cli?style=for-the-badge&logo=github&color=blue)](https://github.com/Lemn4t/mfkey_desktop_cli/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/Lemn4t/mfkey_desktop_cli/total?style=for-the-badge&logo=github&color=success)](https://github.com/Lemn4t/mfkey_desktop_cli/releases)
-[![License](https://img.shields.io/github/license/Lemn4t/mfkey_desktop_cli?style=for-the-badge&color=orange)](LICENSE)
+![GitHub License](https://img.shields.io/github/license/Lemn4t/mfkey_desktop_cli?style=for-the-badge&color=orange)
 
 [![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)[![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)](<https://en.wikipedia.org/wiki/C_(programming_language)>)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=for-the-badge)](https://github.com/Lemn4t/mfkey_desktop_cli/releases)
