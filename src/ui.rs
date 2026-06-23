@@ -1,6 +1,7 @@
 use crate::model::MfClassicKey;
 use colored::*;
 use console::Term;
+use dialoguer::{Select, theme::ColorfulTheme};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::sync::Mutex;
 use std::time::Duration;
@@ -67,10 +68,13 @@ impl Ui {
 
         if self.colored() {
             println!("{}", art.cyan().bold());
-            println!("{}", "░▒▓█ MIFARE Classic Key Recovery Tool █▓▒░".magenta());
+            println!(
+                "{}",
+                "░▒▓█ Flipper Zero :: MIFARE Classic Key Recovery Tool █▓▒░".magenta()
+            );
         } else {
             println!("{}", art);
-            println!("░▒▓█ MIFARE Classic Key Recovery Tool █▓▒░");
+            println!("░▒▓█ Flipper Zero :: MIFARE Classic Key Recovery Tool █▓▒░");
         }
         println!("{}\n", "═".repeat(64));
     }
@@ -379,5 +383,18 @@ impl Ui {
         println!("  • The nonces are invalid or corrupted");
         println!("  • The keyspace being searched doesn't contain the key");
         println!("  • The attack was interrupted before completion\n");
+    }
+
+    pub fn confirm(&self, prompt: &str, default_yes: bool) -> bool {
+        let theme = ColorfulTheme::default();
+        let items = &["Yes", "No"];
+        let default = if default_yes { 0 } else { 1 };
+        let choice = Select::with_theme(&theme)
+            .with_prompt(prompt)
+            .items(items)
+            .default(default)
+            .interact()
+            .unwrap_or(1);
+        choice == 0
     }
 }

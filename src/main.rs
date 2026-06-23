@@ -8,7 +8,6 @@ mod ui;
 use crate::model::MfClassicKey;
 use crate::state::AttackState;
 use crate::ui::{Ui, UiOptions};
-use dialoguer::{Confirm, theme::ColorfulTheme};
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
@@ -226,12 +225,7 @@ fn main() {
     }
 
     if !args.no_ui && (found_count > 0 || candidate_total_count > 0) {
-        let theme = ColorfulTheme::default();
-        let confirmed = Confirm::with_theme(&theme)
-            .with_prompt("Should I show the full path to the saved files?")
-            .default(false)
-            .interact()
-            .unwrap_or(false);
+        let confirmed = ui.confirm("Should I show the full path to the saved files?", false);
 
         if confirmed {
             if let Some(kf) = keys_file {
