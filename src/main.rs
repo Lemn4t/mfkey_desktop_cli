@@ -16,8 +16,8 @@ use std::process;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-const MFKEY_VERSION: &str = "1.0.0";
-const MFKEY_NAME: &str = "mfkey_desktop_cli";
+const MFKEY_VERSION: &str = env!("CARGO_PKG_VERSION");
+const MFKEY_NAME: &str = env!("CARGO_PKG_NAME");
 
 struct Args {
     input_file: String,
