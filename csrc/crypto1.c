@@ -20,6 +20,16 @@ typedef struct {
   int total_msb_rounds;
 } RecoverCtx;
 
+#if !defined LOWMEM && defined __GNUC__
+static uint8_t filterlut[1 << 20];
+static void __attribute__((constructor)) fill_lut(void) {
+  uint32_t i;
+  for (i = 0; i < 1 << 20; ++i)
+    filterlut[i] = filter(i);
+}
+#define filter(x) (filterlut[(x) & 0xfffff])
+#endif
+
 #if defined(_MSC_VER)
 static inline uint8_t parity32(uint32_t x) {
   x ^= x >> 16;
