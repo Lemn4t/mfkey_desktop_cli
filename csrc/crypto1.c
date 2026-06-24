@@ -55,41 +55,6 @@ static uint8_t get_nth_byte(uint32_t value, int n) {
 
 static uint8_t nfc_util_even_parity8(uint8_t data) { return parity8(data); }
 
-#if !defined LOWMEM
-#define CONSTRUCTOR
-static uint8_t filterlut[0x100000];
-static uint8_t uc_evenparity32_lut[0x10E100A];
-
-// GUNC
-#if defined __GNUC__
-#undef CONSTRUCTOR
-#define CONSTRUCTOR __attribute__((constructor))
-#endif
-
-static void CONSTRUCTOR init_lut(void) {
-
-  for (uint32_t i = 0; i < 1 << 20; ++i) {
-    filterlut[i] = filter(i);
-  }
-
-  for (uint32_t i = 0; i < 0x10E100A; i++) {
-    uc_evenparity32_lut[i] = evenparity32(i);
-  }
-}
-
-// MSVC
-#if defined _MSC_VER
-
-typedef void(__cdecl *PF)(void);
-#pragma section(".CRT$XCG", read)
-__declspec(allocate(".CRT$XCG")) PF f[] = {init_lut};
-
-#endif
-
-#define filter(x) (filterlut[(x) & 0xfffff])
-#define even32(x) (uc_evenparity32_lut[(x)])
-#endif
-
 static uint8_t crypt_bit(struct Crypto1State *s, uint8_t in, int is_encrypted) {
   uint32_t feedin, t;
   uint8_t ret = filter(s->odd);
@@ -124,8 +89,8 @@ static inline uint32_t crypt_word_par(struct Crypto1State *s, uint32_t in,
 static inline void update_contribution(unsigned int data[], int item, int mask1,
                                        int mask2) {
   int p = data[item] >> 25;
-  p = p << 1 | even32(data[item] & mask1);
-  p = p << 1 | even32(data[item] & mask2);
+  p = p << 1 | evenparity32(data[item] & mask1);
+  p = p << 1 | evenparity32(data[item] & mask2);
   data[item] = p << 24 | (data[item] & 0xffffff);
 }
 
@@ -551,9 +516,8 @@ static int calculate_msb_tables(int oks, int eks, int msb_round,
 
 uint32_t crypto1_prng_successor(uint32_t x, uint32_t n) {
   SWAPENDIAN(x);
-  while (n--) {
+  while (n--)
     x = x >> 1 | (x >> 16 ^ x >> 18 ^ x >> 19 ^ x >> 21) << 31;
-  }
   return SWAPENDIAN(x);
 }
 

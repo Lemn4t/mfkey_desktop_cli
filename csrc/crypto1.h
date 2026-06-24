@@ -17,7 +17,8 @@ extern "C" {
 #define BIT(x, n) ((x) >> (n) & 1)
 #define BEBIT(x, n) BIT(x, (n) ^ 24)
 #define SWAPENDIAN(x)                                                          \
-  (x = (x >> 8 & 0xff00ff) | (x & 0xff00ff) << 8, x = x >> 16 | x << 16)
+  ((x) = ((x) >> 8 & 0xff00ff) | ((x) & 0xff00ff) << 8,                        \
+   (x) = (x) >> 16 | (x) << 16)
 
 static inline int filter(uint32_t const x) {
   uint32_t f;
