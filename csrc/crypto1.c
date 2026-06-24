@@ -46,8 +46,8 @@ static uint8_t crypto1_bit(struct Crypto1State *s, uint8_t in, int is_encrypted)
   return ret;
 }
 
-static inline uint32_t crypt_word_par(struct Crypto1State *s, uint32_t in, int is_encrypted, uint32_t nt_plain,
-                                      uint8_t *parity_keystream_bits) {
+static inline uint32_t crypt_word_par(struct Crypto1State *s, uint32_t in, int is_encrypted,
+                                      uint32_t nt_plain, uint8_t *parity_keystream_bits) {
   uint32_t ret = 0;
   *parity_keystream_bits = 0;
 
@@ -55,7 +55,8 @@ static inline uint32_t crypt_word_par(struct Crypto1State *s, uint32_t in, int i
     uint8_t bit = crypto1_bit(s, BEBIT(in, i), is_encrypted);
     ret |= bit << (24 ^ i);
     if ((i + 1) % 8 == 0) {
-      *parity_keystream_bits |= (filter(s->odd) ^ evenparity8(get_nth_byte(nt_plain, i / 8))) << (3 - (i / 8));
+      *parity_keystream_bits |= (filter(s->odd) ^ evenparity8(get_nth_byte(nt_plain, i / 8)))
+                                << (3 - (i / 8));
     }
   }
   return ret;
@@ -207,7 +208,8 @@ static inline int check_state(struct Crypto1State *t, RecoverCtx *ctx) {
     if (n->ks1_1_enc == napi_lfsr_rollback_word(t, n->uid_xor_nt0, 0)) {
       uint8_t local_parity_keystream_bits;
       struct Crypto1State temp = {t->odd, t->even};
-      if ((crypt_word_par(&temp, n->uid_xor_nt0, 0, n->nt0, &local_parity_keystream_bits) == n->ks1_1_enc) &&
+      if ((crypt_word_par(&temp, n->uid_xor_nt0, 0, n->nt0, &local_parity_keystream_bits) ==
+           n->ks1_1_enc) &&
           (local_parity_keystream_bits == n->par_1)) {
         crypto1_get_lfsr(t, key6);
         if (ctx->cb->candidate_key)
@@ -218,7 +220,8 @@ static inline int check_state(struct Crypto1State *t, RecoverCtx *ctx) {
   return 0;
 }
 
-static inline int state_loop(unsigned int *states_buffer, int xks, int m1, int m2, unsigned int in, uint8_t and_val) {
+static inline int state_loop(unsigned int *states_buffer, int xks, int m1, int m2, unsigned int in,
+                             uint8_t and_val) {
   int states_tail = 0;
   int round = 0, s = 0, xks_bit = 0, round_in = 0;
 
@@ -299,7 +302,8 @@ static void quicksort(unsigned int array[], int low, int high) {
   }
 }
 
-static int extend_table(unsigned int data[], int tbl, int end, int bit, int m1, int m2, unsigned int in) {
+static int extend_table(unsigned int data[], int tbl, int end, int bit, int m1, int m2,
+                        unsigned int in) {
   in <<= 24;
   for (data[tbl] <<= 1; tbl <= end; data[++tbl] <<= 1) {
     if ((filter(data[tbl]) ^ filter(data[tbl] | 1)) != 0) {
@@ -320,8 +324,9 @@ static int extend_table(unsigned int data[], int tbl, int end, int bit, int m1, 
   return end;
 }
 
-static int old_recover(unsigned int odd[], int o_head, int o_tail, int oks, unsigned int even[], int e_head, int e_tail,
-                       int eks, int rem, int s, RecoverCtx *ctx, unsigned int in, int first_run) {
+static int old_recover(unsigned int odd[], int o_head, int o_tail, int oks, unsigned int even[],
+                       int e_head, int e_tail, int eks, int rem, int s, RecoverCtx *ctx,
+                       unsigned int in, int first_run) {
   int o, e, i;
   if (rem == -1) {
     for (e = e_head; e <= e_tail; ++e) {
@@ -342,10 +347,12 @@ static int old_recover(unsigned int odd[], int o_head, int o_tail, int oks, unsi
       oks >>= 1;
       eks >>= 1;
       in >>= 2;
-      o_tail = extend_table(odd, o_head, o_tail, oks & 1, LF_POLY_EVEN << 1 | 1, LF_POLY_ODD << 1, 0);
+      o_tail =
+          extend_table(odd, o_head, o_tail, oks & 1, LF_POLY_EVEN << 1 | 1, LF_POLY_ODD << 1, 0);
       if (o_head > o_tail)
         return s;
-      e_tail = extend_table(even, e_head, e_tail, eks & 1, LF_POLY_ODD, LF_POLY_EVEN << 1 | 1, in & 3);
+      e_tail =
+          extend_table(even, e_head, e_tail, eks & 1, LF_POLY_ODD, LF_POLY_EVEN << 1 | 1, in & 3);
       if (e_head > e_tail)
         return s;
     }
@@ -370,9 +377,11 @@ static int old_recover(unsigned int odd[], int o_head, int o_tail, int oks, unsi
   return s;
 }
 
-static int calculate_msb_tables(int oks, int eks, int msb_round, RecoverCtx *ctx, unsigned int *states_buffer,
-                                struct Msb *odd_msbs, struct Msb *even_msbs, unsigned int *temp_states_odd,
-                                unsigned int *temp_states_even, unsigned int in, uint32_t uid, int MSB_LIMIT) {
+static int calculate_msb_tables(int oks, int eks, int msb_round, RecoverCtx *ctx,
+                                unsigned int *states_buffer, struct Msb *odd_msbs,
+                                struct Msb *even_msbs, unsigned int *temp_states_odd,
+                                unsigned int *temp_states_even, unsigned int in, uint32_t uid,
+                                int MSB_LIMIT) {
   unsigned int msb_head = (MSB_LIMIT * msb_round);
   unsigned int msb_tail = (MSB_LIMIT * (msb_round + 1));
   int states_tail = 0, tail = 0;
@@ -390,8 +399,8 @@ static int calculate_msb_tables(int oks, int eks, int msb_round, RecoverCtx *ctx
     if (semi_state % 65536 == 0) {
       float progress = (float)(1048576 - semi_state) / 1048576.0f * 100.0f;
       if (ctx->cb->progress)
-        ctx->cb->progress((uint32_t)ctx->current_msb_round, (uint32_t)ctx->total_msb_rounds, progress, uid,
-                          ctx->cb->user);
+        ctx->cb->progress((uint32_t)ctx->current_msb_round, (uint32_t)ctx->total_msb_rounds,
+                          progress, uid, ctx->cb->user);
     }
 
     if (filter(semi_state) == (oks & 1)) {
@@ -454,8 +463,8 @@ static int calculate_msb_tables(int oks, int eks, int msb_round, RecoverCtx *ctx
     memcpy(temp_states_odd, odd_msbs[i].states, odd_msbs[i].tail * sizeof(unsigned int));
     memcpy(temp_states_even, even_msbs[i].states, even_msbs[i].tail * sizeof(unsigned int));
 
-    int res = old_recover(temp_states_odd, 0, odd_msbs[i].tail, oks, temp_states_even, 0, even_msbs[i].tail, eks, 3, 0,
-                          ctx, in >> 16, 1);
+    int res = old_recover(temp_states_odd, 0, odd_msbs[i].tail, oks, temp_states_even, 0,
+                          even_msbs[i].tail, eks, 3, 0, ctx, in >> 16, 1);
     if (res == -1) {
       return 1;
     }
@@ -513,8 +522,8 @@ bool crypto1_recover(const CNonce *n, uint32_t ks2, uint32_t in, const CCallback
   for (msb = 0; msb <= ((256 / MSB_LIMIT) - 1); msb++) {
     ctx.current_msb_round = msb + 1;
 
-    if (calculate_msb_tables(oks, eks, msb, &ctx, states_buffer, odd_msbs, even_msbs, temp_states_odd, temp_states_even,
-                             in, n->uid, MSB_LIMIT)) {
+    if (calculate_msb_tables(oks, eks, msb, &ctx, states_buffer, odd_msbs, even_msbs,
+                             temp_states_odd, temp_states_even, in, n->uid, MSB_LIMIT)) {
       found = true;
       break;
     }
@@ -523,7 +532,8 @@ bool crypto1_recover(const CNonce *n, uint32_t ks2, uint32_t in, const CCallback
     }
 
     if (cb->progress)
-      cb->progress((uint32_t)ctx.current_msb_round, (uint32_t)ctx.total_msb_rounds, 100.0f, n->uid, cb->user);
+      cb->progress((uint32_t)ctx.current_msb_round, (uint32_t)ctx.total_msb_rounds, 100.0f, n->uid,
+                   cb->user);
   }
 
   free(odd_msbs);
