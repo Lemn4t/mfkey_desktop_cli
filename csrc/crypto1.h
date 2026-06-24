@@ -17,10 +17,6 @@ extern "C" {
 #define BIT(x, n) ((x) >> (n) & 1)
 #define BEBIT(x, n) BIT(x, (n) ^ 24)
 #define SWAPENDIAN(x) (x = (x >> 8 & 0xff00ff) | (x & 0xff00ff) << 8, x = x >> 16 | x << 16)
-
-#ifdef __OPTIMIZE_SIZE__
-int filter(uint32_t const x);
-#else
 static inline int filter(uint32_t const x) {
   uint32_t f;
 
@@ -31,7 +27,6 @@ static inline int filter(uint32_t const x) {
   f |= 0x0d938 >> (x >> 16 & 0xf) & 1;
   return BIT(0xEC57E80A, f);
 }
-#endif
 
 #define MF_CLASSIC_KEY_SIZE 6
 
