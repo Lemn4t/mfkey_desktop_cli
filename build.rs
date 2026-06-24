@@ -15,7 +15,6 @@ fn main() {
         if is_release {
             build.flag_if_supported("/O2");
         }
-        build.define("MFKEY_NO_BUILTIN_PARITY", None);
     } else {
         build.flag_if_supported("-std=c11");
         build.flag_if_supported("-Wall");

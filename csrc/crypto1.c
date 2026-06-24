@@ -20,7 +20,7 @@ typedef struct {
   int total_msb_rounds;
 } RecoverCtx;
 
-#if defined(MFKEY_NO_BUILTIN_PARITY) || defined(_MSC_VER)
+#if defined(_MSC_VER)
 static inline uint8_t parity32(uint32_t x) {
   x ^= x >> 16;
   x ^= x >> 8;
