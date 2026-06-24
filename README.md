@@ -116,7 +116,8 @@ The attacks exploit known weaknesses of the Crypto‑1 cipher used in MIFARE Cla
 
 ## 🙏 Thanks
 
-- [Proxmark3 / RfidResearchGroup](https://github.com/RfidResearchGroup/proxmark3) — the original Crypto‑1 algorithm
+- [Proxmark3 / RfidResearchGroup](https://github.com/RfidResearchGroup/proxmark3)
+- [mfkey / noproto](https://github.com/noproto/xero-firmware/tree/dev/applications/system/mfkey)
 
 ---
 

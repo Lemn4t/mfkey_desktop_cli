@@ -575,7 +575,7 @@ bool crypto1_recover(const CNonce *n, uint32_t ks2, uint32_t in,
 
   int MSB_LIMIT = MSB_LIMIT_BASE;
   if (n->attack == ATTACK_STATIC_ENCRYPTED) {
-    MSB_LIMIT = MSB_LIMIT_BASE / 2; // 16 -> 8
+    MSB_LIMIT = MSB_LIMIT_BASE / 2;
   }
 
   struct Msb *odd_msbs =
