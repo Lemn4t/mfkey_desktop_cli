@@ -34,13 +34,52 @@ Download the binary for your platform, and you can run it immediately — you do
   - `mfkey32` — key recovery from two intercepted authentications (Moebius /mfkey32v2)
   - `static_nested` — attacking static nested‑nonces
   - `static_encrypted` — attack on encrypted nonces
+- 🤖 **`--auto` mode** — talk to the Flipper directly over USB: auto-detect the port, pull the `.mfkey32.log` / `.nested.log` files, run the attack and **upload recovered keys back to the device** — fully hands-free
 - 📄 **Automatic detection** of the input file format (Flipper Zero log format)
 - 🛑 Interrupt by `Ctrl+C` with correct termination
 - 💾 Saving found keys and candidate dictionaries
 
 ---
 
+## 🤖 Automatic mode (`--auto`)
+
+The `--auto` flag turns the tool into a one-click solution that works **directly with a connected Flipper Zero** over USB — no manual file copying required.
+
+```bash
+mfkey_desktop_cli --auto
+```
+
+If the port is not detected automatically (this can happen on Windows when USB metadata is missing), specify it manually:
+
+```bash
+mfkey_desktop_cli --auto --port COM3        # Windows
+mfkey_desktop_cli --auto --port /dev/ttyACM0 # Linux
+mfkey_desktop_cli --auto --port /dev/cu.usbmodemflip_XXXX1 # macOS
+```
+
+### What it does, step by step
+
+1. **🔌 Auto-detects** the Flipper Zero serial port (or uses `--port`).
+2. **🤝 Opens an RPC session** over USB-CDC (raises DTR/RTS — required on Windows).
+3. **📂 Lists** `/ext/nfc` and finds **all** log files — both `.mfkey32.log` **and** `.nested.log` are processed in the same run; recovered keys from every file are merged together.
+4. **⬇️ Downloads** the log files and runs the appropriate attack on each one.
+5. **🔀 Smart dictionary merge:**
+   - If `mf_classic_dict_user.nfc` **already exists** on the Flipper — it is downloaded, and **only new keys** are appended to the existing ones.
+   - If the file **does not exist** — a fresh dictionary is created containing only the recovered keys.
+   - Candidate dictionaries are **never** pushed to the device (kept locally only).
+6. **⬆️ Uploads the whole file** back to `/ext/nfc/assets/mf_classic_dict_user.nfc` (full overwrite, not an append). If nothing new was found, the upload is skipped.
+
+> [!NOTE]
+> Before running `--auto`, **close qFlipper, the Web Updater and any serial terminals** — they hold the COM/serial port exclusively and will prevent the tool from communicating with the device.
+
+> [!TIP]
+> On Windows you can find the Flipper's COM port in **Device Manager → Ports (COM & LPT)**. A Flipper may expose more than one COM port — if the first one doesn't respond, try the next.
+
+---
+
 ## 🚀 Using
+
+### Single file (offline)
 
 ```bash
 mfkey_desktop_cli <input_file>
@@ -52,6 +91,13 @@ Example:
 mfkey_desktop_cli .nested.log
 ```
 
+### Automatic mode (live device)
+
+```bash
+mfkey_desktop_cli --auto
+mfkey_desktop_cli --auto --port COM3
+```
+
 > [!NOTE]
 > **Linux / macOS:** before the first run, make the binary executable:
 >
@@ -60,6 +106,14 @@ mfkey_desktop_cli .nested.log
 > ```
 >
 > On macOS you may also need to allow it in **System Settings → Privacy & Security** if Gatekeeper blocks it.
+>
+> On Linux, accessing the serial port may require adding your user to the `dialout` group:
+>
+> ```bash
+> sudo usermod -aG dialout $USER
+> ```
+>
+> (log out and back in for the change to take effect).
 
 ### Input file format
 
@@ -91,6 +145,9 @@ cargo build --release
 
 The finished binary will appear in `target/release/`.
 
+> [!NOTE]
+> Protobuf definitions for the Flipper RPC protocol are compiled at build time with the pure-Rust [`protox`](https://crates.io/crates/protox) parser, so **`protoc` is not required** to build the project.
+
 ---
 
 ## 🧩 How it works
@@ -100,8 +157,11 @@ The finished binary will appear in `target/release/`.
 | Core of Crypto‑1   | **C**        | Restoring the LFSR state, iterating through MSB tables |
 | Parser and the CLI | **Rust**     | Nonce reading, attack selection, progress, withdrawal  |
 | FFI bridge         | **Rust ↔ C** | Transfer of structures and callbacks between layers    |
+| Flipper RPC (USB)  | **Rust**     | Serial transport, protobuf framing, Storage operations |
 
 The attacks exploit known weaknesses of the Crypto‑1 cipher used in MIFARE Classic cards.
+
+In `--auto` mode the tool speaks the Flipper Zero **Protobuf RPC** protocol over USB-CDC: it switches the CLI into RPC mode (`start_rpc_session`), then uses `Storage*` commands to list, read, write and delete files on the device.
 
 ---
 
@@ -118,6 +178,7 @@ The attacks exploit known weaknesses of the Crypto‑1 cipher used in MIFARE Cla
 
 - [Proxmark3 / RfidResearchGroup](https://github.com/RfidResearchGroup/proxmark3)
 - [mfkey / noproto](https://github.com/noproto/xero-firmware/tree/dev/applications/system/mfkey)
+- [Flipper Zero Protobuf](https://github.com/flipperdevices/flipperzero-protobuf) — RPC protocol definitions
 
 ---
 
