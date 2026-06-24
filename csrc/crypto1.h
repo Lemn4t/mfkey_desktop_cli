@@ -16,8 +16,7 @@ extern "C" {
 #define CONST_M2_2 (LF_POLY_EVEN << 1 | 1)
 #define BIT(x, n) ((x) >> (n) & 1)
 #define BEBIT(x, n) BIT(x, (n) ^ 24)
-#define SWAPENDIAN(x)                                                          \
-  (x = (x >> 8 & 0xff00ff) | (x & 0xff00ff) << 8, x = x >> 16 | x << 16)
+#define SWAPENDIAN(x) (x = (x >> 8 & 0xff00ff) | (x & 0xff00ff) << 8, x = x >> 16 | x << 16)
 
 #ifdef __OPTIMIZE_SIZE__
 int filter(uint32_t const x);
@@ -36,11 +35,7 @@ static inline int filter(uint32_t const x) {
 
 #define MF_CLASSIC_KEY_SIZE 6
 
-typedef enum {
-  ATTACK_MFKEY32 = 0,
-  ATTACK_STATIC_NESTED = 1,
-  ATTACK_STATIC_ENCRYPTED = 2
-} CAttackType;
+typedef enum { ATTACK_MFKEY32 = 0, ATTACK_STATIC_NESTED = 1, ATTACK_STATIC_ENCRYPTED = 2 } CAttackType;
 
 typedef struct {
   int32_t attack;
@@ -67,14 +62,12 @@ typedef struct {
 typedef struct {
   void (*found_key)(const uint8_t *key6, void *user);
   void (*candidate_key)(const uint8_t *key6, uint8_t key_idx, void *user);
-  void (*progress)(uint32_t msb_round, uint32_t total_rounds,
-                   float stage_progress, uint32_t uid, void *user);
+  void (*progress)(uint32_t msb_round, uint32_t total_rounds, float stage_progress, uint32_t uid, void *user);
   int (*should_stop)(void *user);
   void *user;
 } CCallbacks;
 
-bool crypto1_recover(const CNonce *n, uint32_t ks2, uint32_t in,
-                     const CCallbacks *cb);
+bool crypto1_recover(const CNonce *n, uint32_t ks2, uint32_t in, const CCallbacks *cb);
 
 uint32_t crypto1_prng_successor(uint32_t x, uint32_t n);
 
