@@ -178,7 +178,7 @@ In `--auto` mode the tool speaks the Flipper Zero **Protobuf RPC** protocol over
 
 - [Proxmark3 / RfidResearchGroup](https://github.com/RfidResearchGroup/proxmark3)
 - [mfkey / noproto](https://github.com/noproto/xero-firmware/tree/dev/applications/system/mfkey)
-- [Flipper Zero Protobuf](https://github.com/flipperdevices/flipperzero-protobuf) — RPC protocol definitions
+- [Flipper Zero Protobuf](https://github.com/flipperdevices/flipperzero-protobuf)
 
 ---
 
