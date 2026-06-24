@@ -35,4 +35,5 @@ fn main() {
 
     println!("cargo:rerun-if-changed=csrc/crypto1.c");
     println!("cargo:rerun-if-changed=csrc/crypto1.h");
+    println!("cargo:rerun-if-changed=csrc/parity.h");
 }

@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "parity.h"
+
 #define MSB_LIMIT_BASE 16
 
 struct Crypto1State {
@@ -30,40 +32,12 @@ static void __attribute__((constructor)) fill_lut(void) {
 #define filter(x) (filterlut[(x) & 0xfffff])
 #endif
 
-#if defined(_MSC_VER)
-static inline uint8_t parity32(uint32_t x) {
-  x ^= x >> 16;
-  x ^= x >> 8;
-  x ^= x >> 4;
-  x ^= x >> 2;
-  x ^= x >> 1;
-  return (uint8_t)(x & 1);
-}
-static inline uint8_t parity8(uint8_t x) {
-  x ^= x >> 4;
-  x ^= x >> 2;
-  x ^= x >> 1;
-  return (uint8_t)(x & 1);
-}
-#else
-static inline uint8_t parity32(uint32_t x) {
-  return (uint8_t)__builtin_parity(x);
-}
-static inline uint8_t parity8(uint8_t x) {
-  return (uint8_t)__builtin_parity((unsigned int)x);
-}
-#endif
-
-static inline uint8_t evenparity32(uint32_t x) { return parity32(x); }
-
 static uint8_t get_nth_byte(uint32_t value, int n) {
   if (n < 0 || n > 3) {
     return 0;
   }
   return (value >> (8 * (3 - n))) & 0xFF;
 }
-
-static uint8_t nfc_util_even_parity8(uint8_t data) { return parity8(data); }
 
 static uint8_t crypt_bit(struct Crypto1State *s, uint8_t in, int is_encrypted) {
   uint32_t feedin, t;
@@ -88,8 +62,7 @@ static inline uint32_t crypt_word_par(struct Crypto1State *s, uint32_t in,
     ret |= bit << (24 ^ i);
     if ((i + 1) % 8 == 0) {
       *parity_keystream_bits |=
-          (filter(s->odd) ^
-           nfc_util_even_parity8(get_nth_byte(nt_plain, i / 8)))
+          (filter(s->odd) ^ evenparity8(get_nth_byte(nt_plain, i / 8)))
           << (3 - (i / 8));
     }
   }
