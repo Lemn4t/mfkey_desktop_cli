@@ -1,4 +1,5 @@
 use std::env;
+use std::path::{Path, PathBuf};
 
 fn main() {
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
@@ -36,4 +37,27 @@ fn main() {
     println!("cargo:rerun-if-changed=csrc/crypto1.c");
     println!("cargo:rerun-if-changed=csrc/crypto1.h");
     println!("cargo:rerun-if-changed=csrc/parity.h");
+
+    let proto_dir = Path::new("proto");
+    if proto_dir.exists() {
+        let mut protos: Vec<PathBuf> = Vec::new();
+        for entry in std::fs::read_dir(proto_dir).expect("read proto dir") {
+            let path = entry.expect("proto entry").path();
+            if path.extension().and_then(|e| e.to_str()) == Some("proto") {
+                protos.push(path);
+            }
+        }
+        protos.sort();
+
+        if !protos.is_empty() {
+            println!("cargo:rerun-if-changed=proto");
+
+            let file_descriptors = protox::compile(&protos, &[proto_dir])
+                .expect("failed to compile flipper .proto files with protox");
+
+            prost_build::Config::new()
+                .compile_fds(file_descriptors)
+                .expect("prost-build failed to generate code");
+        }
+    }
 }
