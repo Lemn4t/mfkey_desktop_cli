@@ -3,27 +3,32 @@
 
 #include <stdint.h>
 
-static inline uint8_t evenparity8(uint8_t x) {
-#if defined(_MSC_VER)
-  x ^= x >> 4;
-  x ^= x >> 2;
-  x ^= x >> 1;
-  return (uint8_t)(x & 1);
-#else
-  return (uint8_t)__builtin_parity((unsigned int)x);
-#endif
-}
+static const uint8_t g_odd_byte_parity[256] = {
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0,
+    1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1,
+    1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1,
+    0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1,
+    0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0,
+    0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1,
+    0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1};
+
+static inline uint8_t evenparity8(const uint8_t x) { return !g_odd_byte_parity[x]; }
 
 static inline uint8_t evenparity32(uint32_t x) {
-#if defined(_MSC_VER)
+#if _MSC_VER
   x ^= x >> 16;
   x ^= x >> 8;
   x ^= x >> 4;
-  x ^= x >> 2;
-  x ^= x >> 1;
-  return (uint8_t)(x & 1);
+  x &= 0xf;
+  return (0x6996 >> x) & 1;
+#elif !defined __GNUC__
+  x ^= x >> 16;
+  x ^= x >> 8;
+  return EVEN_PARITY8(x);
 #else
-  return (uint8_t)__builtin_parity(x);
+  return (__builtin_parity(x) & 0xFF);
 #endif
 }
 
