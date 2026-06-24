@@ -74,7 +74,7 @@ fn parse_nested_line(tokens: &[&str]) -> Option<Nonce> {
 
     let mut nonce = Nonce {
         attack: AttackType::StaticEncrypted,
-        key_idx, // <-- ВЫЧИСЛЕННЫЙ key_idx
+        key_idx,
         uid,
         nt0,
         nt1: 0,

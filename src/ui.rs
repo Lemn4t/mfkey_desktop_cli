@@ -46,8 +46,6 @@ impl Ui {
         self.opts.use_colors && !self.opts.no_ui
     }
 
-    // --- Заголовок ---------------------------------------------------------
-
     pub fn show_title(&self) {
         if self.opts.no_ui {
             println!("MIFARE Classic Key Recovery Tool");

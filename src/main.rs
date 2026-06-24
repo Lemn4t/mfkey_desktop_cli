@@ -1,9 +1,36 @@
 mod attack;
+mod auto;
 mod ffi;
+mod flipper;
 mod model;
 mod parser;
 mod state;
 mod ui;
+
+pub mod pb_app {
+    include!(concat!(env!("OUT_DIR"), "/pb_app.rs"));
+}
+pub mod pb_desktop {
+    include!(concat!(env!("OUT_DIR"), "/pb_desktop.rs"));
+}
+pub mod pb_gpio {
+    include!(concat!(env!("OUT_DIR"), "/pb_gpio.rs"));
+}
+pub mod pb_gui {
+    include!(concat!(env!("OUT_DIR"), "/pb_gui.rs"));
+}
+pub mod pb_property {
+    include!(concat!(env!("OUT_DIR"), "/pb_property.rs"));
+}
+pub mod pb_storage {
+    include!(concat!(env!("OUT_DIR"), "/pb_storage.rs"));
+}
+pub mod pb_system {
+    include!(concat!(env!("OUT_DIR"), "/pb_system.rs"));
+}
+pub mod pb {
+    include!(concat!(env!("OUT_DIR"), "/pb.rs"));
+}
 
 use crate::model::MfClassicKey;
 use crate::state::AttackState;
@@ -49,6 +76,13 @@ fn print_usage(program: &str) {
     println!("  -h, --help        Show this help message and exit");
     println!("  --no-ui           Disable UI and use simple text output");
     println!("  --version         Show version information");
+    println!();
+    println!("AUTO MODE (Flipper Zero over USB):");
+    println!("  --auto            Find a connected Flipper, pull *.mfkey32.log / *.nested.log");
+    println!("                    from /ext/nfc, delete them, run the attack and upload the");
+    println!("                    recovered keys to /ext/nfc/assets/mf_classic_dict_user.nfc");
+    println!("  --port <PORT>     (optional) Serial port of the Flipper (skip auto-detect)");
+    println!("  --out <DIR>       (optional) Directory for local copies of logs/keys");
 }
 
 fn parse_args() -> Option<Args> {
@@ -131,6 +165,31 @@ fn save_candidate_dict(uid: u32, keys: &[(u8, MfClassicKey)], output_dir: Option
 }
 
 fn main() {
+    let argv: Vec<String> = std::env::args().collect();
+    if argv.iter().any(|a| a == "--auto") {
+        let port_override = argv
+            .iter()
+            .position(|a| a == "--port")
+            .and_then(|i| argv.get(i + 1))
+            .map(|s| s.as_str());
+
+        let out_dir = argv
+            .iter()
+            .position(|a| a == "--out")
+            .and_then(|i| argv.get(i + 1))
+            .map(std::path::PathBuf::from);
+
+        let no_ui = argv.iter().any(|a| a == "--no-ui");
+
+        match auto::run_auto(port_override, out_dir.as_deref(), no_ui) {
+            Ok(()) => process::exit(0),
+            Err(e) => {
+                eprintln!("\x1b[31mAUTO failed:\x1b[0m {e}");
+                process::exit(1);
+            }
+        }
+    }
+
     let args = match parse_args() {
         Some(a) => a,
         None => process::exit(0),

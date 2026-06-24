@@ -1,0 +1,139 @@
+use super::session::FlipperSession;
+use super::{FlipperError, Result};
+use crate::{pb, pb_storage};
+use std::time::Duration;
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct DirEntry {
+    pub name: String,
+    pub is_dir: bool,
+    pub size: u32,
+}
+
+impl FlipperSession {
+    pub fn storage_list(&mut self, path: &str) -> Result<Vec<DirEntry>> {
+        let req = pb_storage::ListRequest {
+            path: path.to_string(),
+            ..Default::default()
+        };
+        let parts = self.request_stream(
+            pb::main::Content::StorageListRequest(req),
+            Duration::from_secs(10),
+        )?;
+
+        let mut out = Vec::new();
+        for c in parts {
+            if let pb::main::Content::StorageListResponse(resp) = c {
+                for f in resp.file {
+                    out.push(DirEntry {
+                        name: f.name,
+                        is_dir: f.r#type == 1,
+                        size: f.size,
+                    });
+                }
+            }
+        }
+        Ok(out)
+    }
+
+    pub fn storage_read(&mut self, path: &str) -> Result<Vec<u8>> {
+        let req = pb_storage::ReadRequest {
+            path: path.to_string(),
+        };
+        let parts = self.request_stream(
+            pb::main::Content::StorageReadRequest(req),
+            Duration::from_secs(30),
+        )?;
+
+        let mut data = Vec::new();
+        for c in parts {
+            if let pb::main::Content::StorageReadResponse(resp) = c {
+                if let Some(file) = resp.file {
+                    data.extend_from_slice(&file.data);
+                }
+            }
+        }
+        Ok(data)
+    }
+
+    pub fn storage_write(&mut self, path: &str, data: &[u8]) -> Result<()> {
+        const CHUNK: usize = 512;
+
+        if data.len() <= CHUNK {
+            let req = pb_storage::WriteRequest {
+                path: path.to_string(),
+                file: Some(pb_storage::File {
+                    data: data.to_vec(),
+                    ..Default::default()
+                }),
+            };
+            self.request(
+                pb::main::Content::StorageWriteRequest(req),
+                Duration::from_secs(30),
+            )?;
+            return Ok(());
+        }
+
+        self.storage_write_chunked(path, data, CHUNK)
+    }
+
+    fn storage_write_chunked(&mut self, path: &str, data: &[u8], chunk: usize) -> Result<()> {
+        use super::framing::write_message;
+
+        let id = self.alloc_id_pub();
+        let total = data.len();
+        let mut offset = 0usize;
+
+        while offset < total {
+            let end = (offset + chunk).min(total);
+            let part = &data[offset..end];
+            let has_next = end < total;
+
+            let req = pb_storage::WriteRequest {
+                path: path.to_string(),
+                file: Some(pb_storage::File {
+                    data: part.to_vec(),
+                    ..Default::default()
+                }),
+            };
+            let msg = pb::Main {
+                command_id: id,
+                command_status: 0,
+                has_next,
+                content: Some(pb::main::Content::StorageWriteRequest(req)),
+            };
+            write_message(&mut self.t, &msg)?;
+            offset = end;
+        }
+
+        let resp = self.recv_for_pub(id, Duration::from_secs(30))?;
+        if resp.command_status != 0 {
+            return Err(FlipperError::CommandStatus(resp.command_status));
+        }
+        Ok(())
+    }
+
+    pub fn storage_delete(&mut self, path: &str, recursive: bool) -> Result<()> {
+        let req = pb_storage::DeleteRequest {
+            path: path.to_string(),
+            recursive,
+        };
+        self.request(
+            pb::main::Content::StorageDeleteRequest(req),
+            Duration::from_secs(10),
+        )?;
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn storage_exists(&mut self, path: &str) -> Result<bool> {
+        let (dir, name) = match path.rfind('/') {
+            Some(i) => (&path[..i], &path[i + 1..]),
+            None => ("/", path),
+        };
+        let dir = if dir.is_empty() { "/" } else { dir };
+        let entries = self.storage_list(dir)?;
+        Ok(entries.iter().any(|e| e.name == name))
+    }
+}
