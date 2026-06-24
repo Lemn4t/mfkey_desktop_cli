@@ -2,18 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LF_POLY_ODD (0x29CE5C)
-#define LF_POLY_EVEN (0x870804)
-#define CONST_M1_1 (LF_POLY_EVEN << 1 | 1)
-#define CONST_M2_1 (LF_POLY_ODD << 1)
-#define CONST_M1_2 (LF_POLY_ODD)
-#define CONST_M2_2 (LF_POLY_EVEN << 1 | 1)
-#define BIT(x, n) ((x) >> (n) & 1)
-#define BEBIT(x, n) BIT(x, (n) ^ 24)
-#define SWAPENDIAN(x)                                                          \
-  ((x) = ((x) >> 8 & 0xff00ff) | ((x) & 0xff00ff) << 8,                        \
-   (x) = (x) >> 16 | (x) << 16)
-
 #define MSB_LIMIT_BASE 16
 
 struct Crypto1State {
