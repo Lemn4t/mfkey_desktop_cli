@@ -1,0 +1,93 @@
+name: "🎯 Feature Request"
+description: Propose a brand-new feature or capability
+title: "[Feature]: "
+labels: ["feature request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! 🚀
+        Use this template to request **new** functionality that doesn't exist yet.
+        For improvements to existing behavior, please use the **Enhancement** template.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have searched the [existing issues](../issues) and this feature has not been requested yet.
+          required: true
+        - label: This feature is in scope for a MIFARE Classic key-recovery CLI tool for Flipper Zero.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem would this feature solve? Is your request related to a frustration?
+      placeholder: "I'm always frustrated when ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Related area
+      description: Which part of the project would this feature most likely touch?
+      options:
+        - "New attack type / algorithm"
+        - "Automatic mode (--auto / USB RPC)"
+        - "CLI / new flags & arguments"
+        - "Input/output file formats"
+        - "Dictionary management"
+        - "Cross-platform support"
+        - "Build / packaging / distribution"
+        - "Other"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Target platform(s)
+      description: Which operating systems should this feature support?
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - All platforms
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any alternative solutions or features you've considered.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Links, references (e.g. Proxmark3 techniques), examples, or mock-ups.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I would be willing to help implement this feature via a Pull Request.
+          required: false

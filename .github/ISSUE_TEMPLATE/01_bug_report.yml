@@ -1,0 +1,154 @@
+name: "🐛 Bug Report"
+description: Report a reproducible bug or unexpected behavior in mfkey_desktop_cli
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! 🙏
+        Please fill out the form below as completely as possible — it helps us reproduce and fix the issue faster.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-submission checklist
+      description: Please confirm the following before opening the issue.
+      options:
+        - label: I have searched the [existing issues](../issues) and this bug has not been reported yet.
+          required: true
+        - label: I am using the latest version (or the latest release) of mfkey_desktop_cli.
+          required: true
+        - label: I have read the README, including the notes about closing qFlipper / Web Updater / serial terminals before using `--auto`.
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: A clear and concise description of what the bug is.
+      placeholder: When I run ... the tool ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps (and the exact command) needed to reproduce the behavior.
+      placeholder: |
+        1. Run `mfkey_desktop_cli .nested.log`
+        2. ...
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior / logs
+      description: |
+        What actually happened? Paste the full terminal output / error message here.
+        ⚠️ Please remove or mask any sensitive data (UIDs, keys) you don't want to share publicly.
+      render: shell
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode of operation
+      description: How were you running the tool when the bug occurred?
+      options:
+        - "Single file (offline)"
+        - "Automatic mode (--auto, live device)"
+        - "Both / not sure"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: attack
+    attributes:
+      label: Attack type involved
+      description: Which attack type was being used (if relevant)?
+      options:
+        - "mfkey32 (.mfkey32.log)"
+        - "static_nested (.nested.log)"
+        - "static_encrypted"
+        - "Not applicable / unknown"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Other (specify in additional context)
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version / distribution
+      placeholder: "e.g. Windows 11 23H2 / Ubuntu 24.04 / macOS 14.5"
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: mfkey_desktop_cli version
+      description: Output of `mfkey_desktop_cli --version` or the release tag you downloaded.
+      placeholder: "e.g. v1.0.3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you obtain the binary?
+      options:
+        - "Pre-built release from the Releases page"
+        - "Built from source (cargo build --release)"
+    validations:
+      required: true
+
+  - type: input
+    id: flipper-fw
+    attributes:
+      label: Flipper Zero firmware (if --auto was used)
+      placeholder: "e.g. Official 1.x.x / Unleashed / RogueMaster / N/A"
+    validations:
+      required: false
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample input (optional)
+      description: |
+        If the bug is related to file parsing, paste a minimal sample line from your log file
+        (`.mfkey32.log` / `.nested.log`). You may anonymize the hex values.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, related issues, or anything else that might help.
+    validations:
+      required: false

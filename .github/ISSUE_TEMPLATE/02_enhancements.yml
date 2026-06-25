@@ -1,0 +1,79 @@
+name: "⚡ Enhancement"
+description: Suggest an improvement to an existing feature or behavior
+title: "[Enhancement]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to propose improvements to **existing** functionality
+        (performance, usability, output, CLI ergonomics, etc.).
+        If you want a brand-new capability, please use the **Feature request** template instead.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have searched the [existing issues](../issues) and this enhancement has not been suggested yet.
+          required: true
+        - label: This is an improvement to existing behavior, not a request for an entirely new feature.
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area of improvement
+      description: Which part of the project does this enhancement target?
+      options:
+        - "Crypto-1 core / attack performance (C)"
+        - "Attack orchestration / parsing (Rust)"
+        - "CLI interface & arguments"
+        - "Automatic mode (--auto / USB RPC)"
+        - "Dictionary handling (mf_classic_dict_user.nfc)"
+        - "Output / logging / progress display"
+        - "Build process"
+        - "Documentation"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior
+      description: Describe how things work today and what is limiting or annoying about it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed improvement
+      description: Describe the change you'd like to see and how it improves the current behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefit
+    attributes:
+      label: Why is this valuable?
+      description: Who benefits and how (e.g. faster recovery, fewer steps, clearer output)?
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds you currently use, or other approaches you thought about.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Benchmarks, mock-ups, examples, or anything else relevant.
+    validations:
+      required: false
