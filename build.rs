@@ -1,15 +1,11 @@
-use std::env;
-use std::path::{Path, PathBuf};
-
 fn main() {
-    let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
-    let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
 
     let mut build = cc::Build::new();
     build.file("csrc/crypto1.c");
     build.include("csrc");
 
-    let profile = env::var("PROFILE").unwrap_or_default();
+    let profile = std::env::var("PROFILE").unwrap_or_default();
     let is_release = profile == "release";
 
     if target_env == "msvc" {
@@ -19,17 +15,10 @@ fn main() {
     } else {
         build.flag_if_supported("-std=c11");
         build.flag_if_supported("-Wall");
+
         if is_release {
             build.flag_if_supported("-O3");
-            build.flag_if_supported("-funroll-loops");
         }
-    }
-
-    match target_os.as_str() {
-        "macos" => {}
-        "linux" => {}
-        "windows" => {}
-        _ => {}
     }
 
     build.compile("crypto1");
@@ -38,26 +27,35 @@ fn main() {
     println!("cargo:rerun-if-changed=csrc/crypto1.h");
     println!("cargo:rerun-if-changed=csrc/parity.h");
 
-    let proto_dir = Path::new("proto");
-    if proto_dir.exists() {
-        let mut protos: Vec<PathBuf> = Vec::new();
-        for entry in std::fs::read_dir(proto_dir).expect("read proto dir") {
-            let path = entry.expect("proto entry").path();
-            if path.extension().and_then(|e| e.to_str()) == Some("proto") {
-                protos.push(path);
-            }
-        }
-        protos.sort();
+    let protoc = protoc_bin_vendored::protoc_bin_path()
+        .expect("protoc-bin-vendored: no binary for this platform");
 
-        if !protos.is_empty() {
-            println!("cargo:rerun-if-changed=proto");
+    let proto_dir = std::path::PathBuf::from("proto");
 
-            let file_descriptors = protox::compile(&protos, &[proto_dir])
-                .expect("failed to compile flipper .proto files with protox");
+    let protos: Vec<_> = [
+        "flipper.proto",
+        "storage.proto",
+        "system.proto",
+        "application.proto",
+        "gui.proto",
+        "gpio.proto",
+        "property.proto",
+        "desktop.proto",
+    ]
+    .iter()
+    .map(|f| proto_dir.join(f))
+    .collect();
 
-            prost_build::Config::new()
-                .compile_fds(file_descriptors)
-                .expect("prost-build failed to generate code");
-        }
+    for p in &protos {
+        println!("cargo:rerun-if-changed={}", p.display());
     }
+
+    let mut cfg = prost_build::Config::new();
+
+    cfg.protoc_executable(protoc);
+
+    cfg.type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]");
+
+    cfg.compile_protos(&protos, &[proto_dir])
+        .expect("prost-build failed");
 }
