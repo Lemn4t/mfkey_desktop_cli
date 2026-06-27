@@ -46,7 +46,7 @@ pub fn run_auto(
         Some(p) => p.to_path_buf(),
         None => std::env::current_dir().map_err(|e| format!("cwd error: {e}"))?,
     };
-    let logs_dir = base.join("mfkey_auto_logs");
+    let logs_dir = base.join("mfkey_auto_data");
     fs::create_dir_all(&logs_dir).map_err(|e| format!("cannot create {logs_dir:?}: {e}"))?;
 
     let port = match port_override {
@@ -168,6 +168,44 @@ pub fn run_auto(
 
         for k in &attack_state.found_keys {
             all_keys.insert(k.to_hex().to_uppercase());
+        }
+    }
+
+    if !local_dicts.is_empty() {
+        local_dicts.sort();
+        local_dicts.dedup();
+
+        println!(
+            "{} {} candidate dict(s) to device...",
+            "↑ Uploading".cyan(),
+            local_dicts.len()
+        );
+
+        for dict_path in &local_dicts {
+            let file_name = match dict_path.file_name().and_then(|n| n.to_str()) {
+                Some(n) => n.to_string(),
+                None => {
+                    eprintln!("warning: skipping dict with invalid name: {dict_path:?}");
+                    continue;
+                }
+            };
+
+            let data = match fs::read(dict_path) {
+                Ok(d) => d,
+                Err(e) => {
+                    eprintln!("warning: cannot read local dict {dict_path:?}: {e}");
+                    continue;
+                }
+            };
+
+            let remote_dict = format!("{ASSETS_DIR}/{file_name}");
+
+            let _ = sess.storage_delete(&remote_dict, false);
+
+            match sess.storage_write(&remote_dict, &data) {
+                Ok(_) => println!("  {} {}", "uploaded:".dimmed(), remote_dict),
+                Err(e) => eprintln!("warning: upload {remote_dict} failed: {e}"),
+            }
         }
     }
 

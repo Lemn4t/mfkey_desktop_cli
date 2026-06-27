@@ -4,9 +4,7 @@
 
 **MIFARE Classic Cross-platform CLI Key Recovery Tool for Flipper Zero**
 
-[![Latest Release](https://img.shields.io/github/v/release/Lemn4t/mfkey_desktop_cli?style=for-the-badge&logo=github&color=blue)](https://github.com/Lemn4t/mfkey_desktop_cli/releases/latest)
-[![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/Lemn4t/mfkey_desktop_cli/latest/total?style=for-the-badge&logo=github&color=success)](https://github.com/Lemn4t/mfkey_desktop_cli/releases/latest)
-
+[![Latest Release](https://img.shields.io/github/v/release/Lemn4t/mfkey_desktop_cli?style=for-the-badge&logo=github&color=blue)](https://github.com/Lemn4t/mfkey_desktop_cli/releases/latest)[![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/Lemn4t/mfkey_desktop_cli/latest/total?style=for-the-badge&logo=github&color=success)](https://github.com/Lemn4t/mfkey_desktop_cli/releases/latest)
 [![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)[![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)](<https://en.wikipedia.org/wiki/C_(programming_language)>)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=for-the-badge)](https://github.com/Lemn4t/mfkey_desktop_cli/releases)
 
@@ -34,7 +32,7 @@ Download the binary for your platform, and you can run it immediately — you do
   - `mfkey32` — key recovery from two intercepted authentications (Moebius /mfkey32v2)
   - `static_nested` — attacking static nested‑nonces
   - `static_encrypted` — attack on encrypted nonces
-- 🤖 **`--auto` mode** — talk to the Flipper directly over USB: auto-detect the port, pull the `.mfkey32.log` / `.nested.log` files, run the attack and **upload recovered keys back to the device** — fully hands-free
+- 🤖 **`--auto` mode** — talk to the Flipper directly over USB: auto-detect the port, pull the `.mfkey32.log` / `.nested.log` files, run the attack and **upload recovered keys and candidate dictionaries back to the device** — fully hands-free
 - 📄 **Automatic detection** of the input file format (Flipper Zero log format)
 - 🛑 Interrupt by `Ctrl+C` with correct termination
 - 💾 Saving found keys and candidate dictionaries
@@ -66,11 +64,14 @@ mfkey_desktop_cli --auto --port /dev/cu.usbmodemflip_XXXX1 # macOS
 5. **🔀 Smart dictionary merge:**
    - If `mf_classic_dict_user.nfc` **already exists** on the Flipper — it is downloaded, and **only new keys** are appended to the existing ones.
    - If the file **does not exist** — a fresh dictionary is created containing only the recovered keys.
-   - Candidate dictionaries are **never** pushed to the device (kept locally only).
-6. **⬆️ Uploads the whole file** back to `/ext/nfc/assets/mf_classic_dict_user.nfc` (full overwrite, not an append). If nothing new was found, the upload is skipped.
+6. **⬆️ Uploads** the merged keys file back to `/ext/nfc/assets/mf_classic_dict_user.nfc` (full overwrite, not an append). If nothing new was found, the upload is skipped.
+7. **🗂️ Uploads candidate dictionaries** (`mf_classic_dict_<uid>.nfc`) to `/ext/nfc/assets/` as well. These are **always written fresh**: if a file with the same name already exists on the device, it is deleted and replaced with the new one (full overwrite, no merge).
 
 > [!NOTE]
 > Before running `--auto`, **close qFlipper, the Web Updater and any serial terminals** — they hold the COM/serial port exclusively and will prevent the tool from communicating with the device.
+
+> [!NOTE]
+> Candidate dictionaries are now uploaded to the device too. Depending on **how many** candidate files were generated and **how large** each one is, this step may take noticeably longer — uploads over USB-CDC can be slow when there are many or heavy files. This is expected; just let it finish.
 
 > [!TIP]
 > On Windows you can find the Flipper's COM port in **Device Manager → Ports (COM & LPT)**. A Flipper may expose more than one COM port — if the first one doesn't respond, try the next.
