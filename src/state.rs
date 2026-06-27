@@ -5,16 +5,11 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
-/// Общий потокобезопасный контекст атаки.
-/// Шарится между всеми rayon-потоками по `&` (внутри только атомики, Mutex и Arc).
 pub struct AttackContext {
     pub stop: Arc<AtomicBool>,
-    /// Кол-во полностью обработанных nonce'ов (монотонный прогресс).
     pub processed: AtomicUsize,
     pub total_nonces: usize,
     pub ui: Arc<Ui>,
-    /// Глобальный дедуп найденных ключей — для печати в реальном времени.
-    /// Первый поток, нашедший ключ, печатает его; остальные молчат.
     pub found_seen: Mutex<HashSet<MfClassicKey>>,
 }
 
@@ -34,20 +29,12 @@ impl AttackContext {
         self.stop.load(Ordering::SeqCst)
     }
 
-    /// Регистрирует найденный ключ глобально.
-    /// Возвращает `true`, если ключ НОВЫЙ (его нужно показать пользователю).
-    /// Потокобезопасно (Mutex).
     pub fn register_found(&self, key: MfClassicKey) -> bool {
         let mut set = self.found_seen.lock().unwrap();
         set.insert(key)
     }
 }
 
-/// Локальное состояние ОДНОГО параллельного таска.
-///
-/// КЛЮЧЕВОЙ ИНВАРИАНТ: указатель на этот объект отдаётся в C-колбэки
-/// (`cb->user`). Объект создаётся внутри rayon-замыкания и принадлежит
-/// ровно одному потоку, поэтому мутации из C-колбэков НЕ создают гонок.
 pub struct TaskState<'ctx> {
     pub found_keys: Vec<MfClassicKey>,
     found_set: HashSet<MfClassicKey>,
@@ -91,8 +78,6 @@ impl<'ctx> TaskState<'ctx> {
     }
 }
 
-/// Финальный агрегатор результатов (после параллельной обработки).
-/// Сюда сливаются результаты тасков уже в ОДНОМ потоке — без блокировок.
 pub struct AttackState {
     pub found_keys: Vec<MfClassicKey>,
     found_set: HashSet<MfClassicKey>,
@@ -127,8 +112,6 @@ impl AttackState {
         self.candidate_set.clear();
     }
 
-    /// Сливает найденные ключи таска в общий результат (для файла и summary).
-    /// Печать НЕ делает — ключи уже показаны в реальном времени из колбэка.
     pub fn merge_found(&mut self, keys: &[MfClassicKey]) {
         for &k in keys {
             if self.found_set.insert(k) {
@@ -137,7 +120,6 @@ impl AttackState {
         }
     }
 
-    /// Сливает кандидатов таска в общий дедуплицированный буфер.
     pub fn merge_candidates(&mut self, cands: &[(u8, MfClassicKey)]) {
         for &(idx, k) in cands {
             self.add_candidate_key(idx, k);

@@ -7,9 +7,6 @@ use std::slice;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
-// ───────────────────────── C callbacks ─────────────────────────
-// `user` всегда указывает на TaskState текущего потока → мутация безопасна.
-
 extern "C" fn cb_found_key(key6: *const u8, user: *mut c_void) {
     if key6.is_null() || user.is_null() {
         return;
@@ -18,12 +15,8 @@ extern "C" fn cb_found_key(key6: *const u8, user: *mut c_void) {
     let s = unsafe { slice::from_raw_parts(key6, MF_CLASSIC_KEY_SIZE) };
     let key = MfClassicKey::from_slice(s);
 
-    // Локально копим (нужно для финального merge / summary / файла).
     state.add_found_key(key);
 
-    // Глобальный дедуп + НЕМЕДЛЕННАЯ печать (реальное время).
-    // register_found потокобезопасен (Mutex), pb.println тоже — поэтому
-    // печать из нескольких потоков корректна и без дублей.
     if state.ctx.register_found(key) {
         state.ctx.ui.show_found_key(&key);
     }
@@ -49,7 +42,6 @@ extern "C" fn cb_progress(
         return;
     }
     let state = unsafe { &*(user as *const TaskState) };
-    // Позиция бара = число уже завершённых nonce'ов (монотонно).
     let done = state.ctx.processed.load(Ordering::Relaxed);
     state.ctx.ui.update_progress(
         done,
@@ -90,8 +82,6 @@ struct TaskResult {
     candidates: Vec<(u8, MfClassicKey)>,
 }
 
-/// Обрабатывает ОДИН nonce в изолированном TaskState. Гонок нет:
-/// весь горячий путь пишет только в локальную память потока.
 fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32, uid: u32) -> TaskResult {
     if ctx.should_stop() {
         return TaskResult {
@@ -114,7 +104,6 @@ fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32, uid: u32)
         );
     }
 
-    // Один nonce завершён — двигаем общий счётчик прогресса.
     ctx.processed.fetch_add(1, Ordering::Relaxed);
 
     TaskResult {
@@ -131,10 +120,8 @@ pub fn run_attack(
 ) -> (usize, Vec<DictOutput>) {
     let ctx = AttackContext::new(Arc::clone(&state.ui), Arc::clone(&state.stop), nonces.len());
 
-    // Один стабильный прогресс-бар на весь прогон.
     state.ui.begin_progress(nonces.len());
 
-    // ── Этап 1: mfkey32 — все nonce независимы → параллель ──────────────
     {
         let results: Vec<TaskResult> = nonces
             .par_iter()
@@ -145,13 +132,11 @@ pub fn run_attack(
             })
             .collect();
 
-        // Печать уже произошла в реальном времени из колбэка — тут только merge.
         for r in &results {
             state.merge_found(&r.found);
         }
     }
 
-    // ── Этап 2: static_nested — независимы → параллель ──────────────────
     {
         let results: Vec<TaskResult> = nonces
             .par_iter()
@@ -168,7 +153,6 @@ pub fn run_attack(
         }
     }
 
-    // ── Этап 3: static_encrypted — группируем по uid, внутри группы параллель ──
     let mut unique_uids: Vec<u32> = Vec::new();
     for n in nonces.iter() {
         if n.attack == AttackType::StaticEncrypted && !unique_uids.contains(&n.uid) {
@@ -204,7 +188,7 @@ pub fn run_attack(
         state.clear_candidates();
         for r in &results {
             state.merge_candidates(&r.candidates);
-            state.merge_found(&r.found); // печать уже была в реальном времени
+            state.merge_found(&r.found);
         }
 
         if !state.candidate_keys.is_empty() {

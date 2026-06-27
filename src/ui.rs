@@ -23,7 +23,6 @@ impl Default for UiOptions {
 
 struct UiInner {
     bar: Option<ProgressBar>,
-    /// Сколько nonce'ов всего (для длины бара). Ставится один раз.
     total_nonces: usize,
 }
 
@@ -168,9 +167,6 @@ impl Ui {
         println!("{}", "─".repeat(64));
     }
 
-    /// Создаёт ЕДИНСТВЕННЫЙ стабильный прогресс-бар по числу nonce'ов.
-    /// Вызывается один раз перед началом параллельной атаки.
-    /// Безопасно дёргать повторно — повторные вызовы игнорируются.
     pub fn begin_progress(&self, total_nonces: usize) {
         if self.opts.no_ui {
             return;
@@ -178,7 +174,7 @@ impl Ui {
         let mut inner = self.inner.lock().unwrap();
         inner.total_nonces = total_nonces;
         if inner.bar.is_some() {
-            return; // уже создан
+            return;
         }
         let pb = ProgressBar::new(total_nonces.max(1) as u64);
         let style = ProgressStyle::with_template(
@@ -192,9 +188,6 @@ impl Ui {
         inner.bar = Some(pb);
     }
 
-    /// Потокобезопасное обновление прогресса.
-    /// При многопотоке показываем СТАБИЛЬНЫЙ счётчик «обработано/всего nonce»,
-    /// а не пер-MSB прогресс (он бессмысленно мигает при параллели).
     pub fn update_progress(
         &self,
         nonce_current: usize,
@@ -232,7 +225,6 @@ impl Ui {
 
         let inner = self.inner.lock().unwrap();
         if let Some(pb) = inner.bar.as_ref() {
-            // Позиция = сколько nonce уже завершено (передаётся как nonce_current).
             pb.set_position(nonce_current.min(nonce_total) as u64);
             let msg = format!("UID 0x{:08X} | MSB {}/{}", uid, msb_current, msb_total);
             pb.set_message(msg);
@@ -251,8 +243,6 @@ impl Ui {
         }
     }
 
-    /// Печатает найденный ключ. При активном баре использует `pb.println`,
-    /// который атомарно печатает строку НАД баром, не затирая её.
     pub fn show_found_key(&self, key: &MfClassicKey) {
         let inner = self.inner.lock().unwrap();
         let print_line = |line: String| {
