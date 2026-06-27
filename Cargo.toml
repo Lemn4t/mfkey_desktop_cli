@@ -15,6 +15,7 @@ serialport = "4.9.0"
 prost = "0.14.4"
 bytes = "1.12.0"
 serde = { version = "1.0.228", features = ["derive"] }
+rayon = "1.12.0"
 
 [build-dependencies]
 cc = "1.2.65"
@@ -22,6 +23,8 @@ prost-build = "0.14.4"
 protoc-bin-vendored = "3.2.0"
 
 [profile.release]
-opt-level = 3
-lto = true
+lto = "fat"
 codegen-units = 1
+panic = "abort"
+strip = true
+opt-level = 3

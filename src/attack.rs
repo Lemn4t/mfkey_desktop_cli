@@ -1,18 +1,31 @@
 use crate::ffi::{AttackType, CCallbacks, CNonce, MF_CLASSIC_KEY_SIZE, crypto1_recover};
 use crate::model::{MfClassicKey, Nonce};
-use crate::state::AttackState;
+use crate::state::{AttackContext, AttackState, TaskState};
+use rayon::prelude::*;
 use std::os::raw::{c_float, c_int, c_void};
 use std::slice;
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+
+// ───────────────────────── C callbacks ─────────────────────────
+// `user` всегда указывает на TaskState текущего потока → мутация безопасна.
 
 extern "C" fn cb_found_key(key6: *const u8, user: *mut c_void) {
     if key6.is_null() || user.is_null() {
         return;
     }
-    let state = unsafe { &mut *(user as *mut AttackState) };
-    let slice = unsafe { slice::from_raw_parts(key6, MF_CLASSIC_KEY_SIZE) };
-    let key = MfClassicKey::from_slice(slice);
-    if state.add_found_key(key) {
-        state.ui.show_found_key(&key);
+    let state = unsafe { &mut *(user as *mut TaskState) };
+    let s = unsafe { slice::from_raw_parts(key6, MF_CLASSIC_KEY_SIZE) };
+    let key = MfClassicKey::from_slice(s);
+
+    // Локально копим (нужно для финального merge / summary / файла).
+    state.add_found_key(key);
+
+    // Глобальный дедуп + НЕМЕДЛЕННАЯ печать (реальное время).
+    // register_found потокобезопасен (Mutex), pb.println тоже — поэтому
+    // печать из нескольких потоков корректна и без дублей.
+    if state.ctx.register_found(key) {
+        state.ctx.ui.show_found_key(&key);
     }
 }
 
@@ -20,10 +33,9 @@ extern "C" fn cb_candidate_key(key6: *const u8, key_idx: u8, user: *mut c_void) 
     if key6.is_null() || user.is_null() {
         return;
     }
-    let state = unsafe { &mut *(user as *mut AttackState) };
-    let slice = unsafe { slice::from_raw_parts(key6, MF_CLASSIC_KEY_SIZE) };
-    let key = MfClassicKey::from_slice(slice);
-    state.add_candidate_key(key_idx, key);
+    let state = unsafe { &mut *(user as *mut TaskState) };
+    let s = unsafe { slice::from_raw_parts(key6, MF_CLASSIC_KEY_SIZE) };
+    state.add_candidate_key(key_idx, MfClassicKey::from_slice(s));
 }
 
 extern "C" fn cb_progress(
@@ -36,10 +48,12 @@ extern "C" fn cb_progress(
     if user.is_null() {
         return;
     }
-    let state = unsafe { &mut *(user as *mut AttackState) };
-    state.ui.update_progress(
-        state.global_current_nonce,
-        state.global_total_nonces,
+    let state = unsafe { &*(user as *const TaskState) };
+    // Позиция бара = число уже завершённых nonce'ов (монотонно).
+    let done = state.ctx.processed.load(Ordering::Relaxed);
+    state.ctx.ui.update_progress(
+        done,
+        state.total_nonces,
         msb_round as usize,
         total_rounds as usize,
         stage_progress,
@@ -51,30 +65,17 @@ extern "C" fn cb_should_stop(user: *mut c_void) -> c_int {
     if user.is_null() {
         return 0;
     }
-    let state = unsafe { &*(user as *const AttackState) };
+    let state = unsafe { &*(user as *const TaskState) };
     if state.should_stop() { 1 } else { 0 }
 }
 
-fn make_callbacks(state: &mut AttackState) -> CCallbacks {
+fn make_callbacks(state: &mut TaskState) -> CCallbacks {
     CCallbacks {
         found_key: Some(cb_found_key),
         candidate_key: Some(cb_candidate_key),
         progress: Some(cb_progress),
         should_stop: Some(cb_should_stop),
-        user: state as *mut AttackState as *mut c_void,
-    }
-}
-
-fn run_recover(state: &mut AttackState, nonce: &Nonce, ks2: u32, in_: u32) -> bool {
-    let c_nonce: CNonce = nonce.to_c();
-    let cb = make_callbacks(state);
-    unsafe {
-        crypto1_recover(
-            &c_nonce as *const CNonce,
-            ks2,
-            in_,
-            &cb as *const CCallbacks,
-        )
+        user: state as *mut TaskState as *mut c_void,
     }
 }
 
@@ -84,59 +85,94 @@ pub struct DictOutput {
     pub path: String,
 }
 
+struct TaskResult {
+    found: Vec<MfClassicKey>,
+    candidates: Vec<(u8, MfClassicKey)>,
+}
+
+/// Обрабатывает ОДИН nonce в изолированном TaskState. Гонок нет:
+/// весь горячий путь пишет только в локальную память потока.
+fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32, uid: u32) -> TaskResult {
+    if ctx.should_stop() {
+        return TaskResult {
+            found: Vec::new(),
+            candidates: Vec::new(),
+        };
+    }
+
+    let mut ts = TaskState::new(ctx);
+    ts.current_uid = uid;
+
+    let c_nonce: CNonce = nonce.to_c();
+    let cb = make_callbacks(&mut ts);
+    unsafe {
+        crypto1_recover(
+            &c_nonce as *const CNonce,
+            ks2,
+            in_,
+            &cb as *const CCallbacks,
+        );
+    }
+
+    // Один nonce завершён — двигаем общий счётчик прогресса.
+    ctx.processed.fetch_add(1, Ordering::Relaxed);
+
+    TaskResult {
+        found: ts.found_keys,
+        candidates: ts.candidate_keys,
+    }
+}
+
 pub fn run_attack(
     state: &mut AttackState,
     nonces: &[Nonce],
     dict_output_dir: Option<&str>,
     save_dict: &mut dyn FnMut(u32, &[(u8, MfClassicKey)], Option<&str>) -> String,
 ) -> (usize, Vec<DictOutput>) {
-    let total_nonces = nonces.len();
-    state.global_total_nonces = total_nonces;
+    let ctx = AttackContext::new(Arc::clone(&state.ui), Arc::clone(&state.stop), nonces.len());
 
-    let mut processed_total: usize = 0;
+    // Один стабильный прогресс-бар на весь прогон.
+    state.ui.begin_progress(nonces.len());
 
-    for nonce in nonces.iter() {
-        if state.should_stop() {
-            break;
+    // ── Этап 1: mfkey32 — все nonce независимы → параллель ──────────────
+    {
+        let results: Vec<TaskResult> = nonces
+            .par_iter()
+            .filter(|n| n.attack == AttackType::Mfkey32)
+            .map(|nonce| {
+                let ks2 = nonce.ar0_enc ^ nonce.p64;
+                process_one(&ctx, nonce, ks2, 0, nonce.uid)
+            })
+            .collect();
+
+        // Печать уже произошла в реальном времени из колбэка — тут только merge.
+        for r in &results {
+            state.merge_found(&r.found);
         }
-        if nonce.attack != AttackType::Mfkey32 {
-            continue;
-        }
-
-        processed_total += 1;
-        state.global_current_nonce = processed_total;
-        state.global_total_nonces = total_nonces;
-
-        let ks2 = nonce.ar0_enc ^ nonce.p64;
-        let in_ = 0u32;
-
-        run_recover(state, nonce, ks2, in_);
     }
 
-    for nonce in nonces.iter() {
-        if state.should_stop() {
-            break;
-        }
-        if nonce.attack != AttackType::StaticNested {
-            continue;
-        }
+    // ── Этап 2: static_nested — независимы → параллель ──────────────────
+    {
+        let results: Vec<TaskResult> = nonces
+            .par_iter()
+            .filter(|n| n.attack == AttackType::StaticNested)
+            .map(|nonce| {
+                let ks_enc = nonce.ks1_2_enc;
+                let nt_xor_uid = nonce.uid_xor_nt1;
+                process_one(&ctx, nonce, ks_enc, nt_xor_uid, nonce.uid)
+            })
+            .collect();
 
-        processed_total += 1;
-        state.global_current_nonce = processed_total;
-        state.global_total_nonces = total_nonces;
-
-        let ks_enc = nonce.ks1_2_enc;
-        let nt_xor_uid = nonce.uid_xor_nt1;
-        run_recover(state, nonce, ks_enc, nt_xor_uid);
+        for r in &results {
+            state.merge_found(&r.found);
+        }
     }
 
+    // ── Этап 3: static_encrypted — группируем по uid, внутри группы параллель ──
     let mut unique_uids: Vec<u32> = Vec::new();
-    for nonce in nonces.iter() {
-        if nonce.attack != AttackType::StaticEncrypted {
-            continue;
-        }
-        if !unique_uids.contains(&nonce.uid) {
-            unique_uids.push(nonce.uid);
+    for n in nonces.iter() {
+        if n.attack == AttackType::StaticEncrypted && !unique_uids.contains(&n.uid) {
+            unique_uids.push(n.uid);
         }
     }
 
@@ -144,35 +180,31 @@ pub fn run_attack(
     let mut candidate_total_count: usize = 0;
 
     for &uid in unique_uids.iter() {
-        if state.should_stop() {
+        if ctx.should_stop() {
             break;
         }
 
-        let group_total = nonces
+        let group: Vec<&Nonce> = nonces
             .iter()
             .filter(|n| n.attack == AttackType::StaticEncrypted && n.uid == uid)
-            .count();
-        if group_total == 0 {
+            .collect();
+        if group.is_empty() {
             continue;
         }
 
+        let results: Vec<TaskResult> = group
+            .par_iter()
+            .map(|nonce| {
+                let ks_enc = nonce.ks1_1_enc;
+                let nt_xor_uid = nonce.uid_xor_nt0;
+                process_one(&ctx, nonce, ks_enc, nt_xor_uid, uid)
+            })
+            .collect();
+
         state.clear_candidates();
-
-        for nonce in nonces.iter() {
-            if state.should_stop() {
-                break;
-            }
-            if nonce.attack != AttackType::StaticEncrypted || nonce.uid != uid {
-                continue;
-            }
-
-            processed_total += 1;
-            state.global_current_nonce = processed_total;
-            state.global_total_nonces = total_nonces;
-
-            let ks_enc = nonce.ks1_1_enc;
-            let nt_xor_uid = nonce.uid_xor_nt0;
-            run_recover(state, nonce, ks_enc, nt_xor_uid);
+        for r in &results {
+            state.merge_candidates(&r.candidates);
+            state.merge_found(&r.found); // печать уже была в реальном времени
         }
 
         if !state.candidate_keys.is_empty() {
@@ -181,7 +213,6 @@ pub fn run_attack(
             dict_outputs.push(DictOutput { uid, count, path });
             candidate_total_count += count;
         }
-
         state.clear_candidates();
     }
 

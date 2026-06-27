@@ -1,16 +1,27 @@
 fn main() {
     let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
 
+    let profile = std::env::var("PROFILE").unwrap_or_default();
+    let is_release = profile == "release";
+
+    let native = std::env::var("MFKEY_NATIVE")
+        .map(|v| v == "1")
+        .unwrap_or(false);
+    println!("cargo:rerun-if-env-changed=MFKEY_NATIVE");
+
     let mut build = cc::Build::new();
     build.file("csrc/crypto1.c");
     build.include("csrc");
 
-    let profile = std::env::var("PROFILE").unwrap_or_default();
-    let is_release = profile == "release";
-
     if target_env == "msvc" {
         if is_release {
             build.flag_if_supported("/O2");
+            build.flag_if_supported("/Oi");
+            build.flag_if_supported("/Ot");
+            build.flag_if_supported("/GL");
+        }
+        if native {
+            build.flag_if_supported("/arch:AVX2");
         }
     } else {
         build.flag_if_supported("-std=c11");
@@ -18,6 +29,13 @@ fn main() {
 
         if is_release {
             build.flag_if_supported("-O3");
+            build.flag_if_supported("-funroll-loops");
+            build.flag_if_supported("-fomit-frame-pointer");
+            build.flag_if_supported("-fno-plt");
+        }
+        if native {
+            build.flag_if_supported("-march=native");
+            build.flag_if_supported("-mtune=native");
         }
     }
 
