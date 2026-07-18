@@ -1,11 +1,7 @@
-mod attack;
 mod auto;
-mod ffi;
+mod core;
 mod flipper;
-mod model;
 mod params;
-mod parser;
-mod state;
 mod ui;
 
 pub mod pb_app {
@@ -33,9 +29,10 @@ pub mod pb {
     include!(concat!(env!("OUT_DIR"), "/pb.rs"));
 }
 
-use crate::model::MfClassicKey;
+use crate::core::engine;
+use crate::core::model::MfClassicKey;
+use crate::core::state::AttackState;
 use crate::params::{Params, RunParams};
-use crate::state::AttackState;
 use crate::ui::{Ui, UiOptions};
 use std::fs::File;
 use std::io::Write;
@@ -121,7 +118,7 @@ fn run(args: RunParams) {
     ui.show_loading(&args.input_file);
 
     let ui_for_load = Arc::clone(&ui);
-    let nonces = match parser::load_nested_nonces(&args.input_file, |idx, uid, name| {
+    let nonces = match core::parser::load_nested_nonces(&args.input_file, |idx, uid, name| {
         ui_for_load.show_nonce_loaded(idx, uid, name);
     }) {
         Ok(n) => n,
@@ -146,7 +143,7 @@ fn run(args: RunParams) {
         save_candidate_dict(uid, keys, dir)
     };
 
-    let (candidate_total_count, dict_outputs) = attack::run_attack(
+    let (candidate_total_count, dict_outputs) = engine::run_attack(
         &mut attack_state,
         &nonces,
         args.dict_output_dir.as_deref(),

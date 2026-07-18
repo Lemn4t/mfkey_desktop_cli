@@ -1,4 +1,4 @@
-use crate::model::MfClassicKey;
+use crate::core::model::MfClassicKey;
 use crate::ui::Ui;
 use std::collections::HashSet;
 use std::sync::Arc;

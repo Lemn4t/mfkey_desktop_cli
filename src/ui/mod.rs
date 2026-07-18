@@ -1,4 +1,4 @@
-use crate::model::MfClassicKey;
+use crate::core::model::MfClassicKey;
 use colored::*;
 use console::Term;
 use dialoguer::{Select, theme::ColorfulTheme};

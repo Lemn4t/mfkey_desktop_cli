@@ -1,5 +1,5 @@
-use crate::ffi::{AttackType, crypto1_prng_successor};
-use crate::model::Nonce;
+use crate::core::ffi::{AttackType, crypto1_prng_successor};
+use crate::core::model::Nonce;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;

@@ -1,4 +1,4 @@
-use crate::ffi::{AttackType, CNonce, MF_CLASSIC_KEY_SIZE};
+use crate::core::ffi::{AttackType, CNonce, MF_CLASSIC_KEY_SIZE};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MfClassicKey {

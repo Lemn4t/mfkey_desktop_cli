@@ -1,6 +1,6 @@
-use crate::ffi::{AttackType, CCallbacks, CNonce, MF_CLASSIC_KEY_SIZE, crypto1_recover};
-use crate::model::{MfClassicKey, Nonce};
-use crate::state::{AttackContext, AttackState, TaskState};
+use crate::core::ffi::{AttackType, CCallbacks, CNonce, MF_CLASSIC_KEY_SIZE, crypto1_recover};
+use crate::core::model::{MfClassicKey, Nonce};
+use crate::core::state::{AttackContext, AttackState, TaskState};
 use rayon::prelude::*;
 use std::os::raw::{c_float, c_int, c_void};
 use std::slice;
