@@ -327,14 +327,14 @@ impl Ui {
 
     pub fn show_saved_files(&self, keys_file: Option<&str>, keys_count: usize) {
         println!("\nFiles saved:");
-        if let Some(f) = keys_file {
-            if keys_count > 0 {
-                let line = format!("  ▸ {} ({} keys)", f, keys_count);
-                if self.colored() {
-                    println!("{}", line.green());
-                } else {
-                    println!("{}", line);
-                }
+        if let Some(f) = keys_file
+            && keys_count > 0
+        {
+            let line = format!("  ▸ {} ({} keys)", f, keys_count);
+            if self.colored() {
+                println!("{}", line.green());
+            } else {
+                println!("{}", line);
             }
         }
     }

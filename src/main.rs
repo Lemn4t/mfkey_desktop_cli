@@ -287,10 +287,10 @@ fn main() {
         let confirmed = ui.confirm("Should I show the full path to the saved files?", false);
 
         if confirmed {
-            if let Some(kf) = keys_file {
-                if let Ok(abs) = std::fs::canonicalize(kf) {
-                    println!("  keys: {}", abs.display());
-                }
+            if let Some(kf) = keys_file
+                && let Ok(abs) = std::fs::canonicalize(kf)
+            {
+                println!("  keys: {}", abs.display());
             }
             for d in &dict_outputs {
                 if let Ok(abs) = std::fs::canonicalize(&d.path) {

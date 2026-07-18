@@ -45,13 +45,12 @@ impl FlipperSession {
             pb::main::Content::StorageReadRequest(req),
             Duration::from_secs(30),
         )?;
-
         let mut data = Vec::new();
         for c in parts {
-            if let pb::main::Content::StorageReadResponse(resp) = c {
-                if let Some(file) = resp.file {
-                    data.extend_from_slice(&file.data);
-                }
+            if let pb::main::Content::StorageReadResponse(resp) = c
+                && let Some(file) = resp.file
+            {
+                data.extend_from_slice(&file.data);
             }
         }
         Ok(data)

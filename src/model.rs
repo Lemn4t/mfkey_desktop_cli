@@ -12,7 +12,7 @@ impl MfClassicKey {
         MfClassicKey { data }
     }
 
-    pub fn to_hex(&self) -> String {
+    pub fn to_hex(self) -> String {
         self.data.iter().map(|b| format!("{:02X}", b)).collect()
     }
 }

@@ -112,11 +112,13 @@ fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32, uid: u32)
     }
 }
 
+pub type SaveDictFn<'a> = dyn FnMut(u32, &[(u8, MfClassicKey)], Option<&str>) -> String + 'a;
+
 pub fn run_attack(
     state: &mut AttackState,
     nonces: &[Nonce],
     dict_output_dir: Option<&str>,
-    save_dict: &mut dyn FnMut(u32, &[(u8, MfClassicKey)], Option<&str>) -> String,
+    save_dict: &mut SaveDictFn,
 ) -> (usize, Vec<DictOutput>) {
     let ctx = AttackContext::new(Arc::clone(&state.ui), Arc::clone(&state.stop), nonces.len());
 
