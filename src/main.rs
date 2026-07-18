@@ -3,6 +3,7 @@ mod auto;
 mod ffi;
 mod flipper;
 mod model;
+mod params;
 mod parser;
 mod state;
 mod ui;
@@ -33,6 +34,7 @@ pub mod pb {
 }
 
 use crate::model::MfClassicKey;
+use crate::params::{Params, RunParams};
 use crate::state::AttackState;
 use crate::ui::{Ui, UiOptions};
 use std::fs::File;
@@ -41,98 +43,6 @@ use std::path::Path;
 use std::process;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-
-const MFKEY_VERSION: &str = env!("CARGO_PKG_VERSION");
-const MFKEY_NAME: &str = env!("CARGO_PKG_NAME");
-
-struct Args {
-    input_file: String,
-    output_file: String,
-    dict_output_dir: Option<String>,
-    no_ui: bool,
-}
-
-fn print_usage(program: &str) {
-    println!(
-        "{} - Flipper Zero :: MIFARE Classic Key Recovery Tool",
-        MFKEY_NAME
-    );
-    println!("Version {}\n", MFKEY_VERSION);
-    println!(
-        "Usage: {} [OPTIONS] <.nested.log/.mfkey32.log> [output_keys.nfc] [dict_output_dir]\n",
-        program
-    );
-    println!("ARGUMENTS:");
-    println!(
-        "  .nested.log/.mfkey32.log        Input file containing one-time values for the attack"
-    );
-    println!(
-        "  output_keys.txt                 Output file for recovered keys (default: mf_classic_dict_user.nfc)"
-    );
-    println!(
-        "  dict_output_dir                 Directory for candidate key dictionaries (default: current dir)\n"
-    );
-    println!("OPTIONS:");
-    println!("  -h, --help        Show this help message and exit");
-    println!("  --no-ui           Disable UI and use simple text output");
-    println!("  --version         Show version information");
-    println!();
-    println!("AUTO MODE (Flipper Zero over USB):");
-    println!("  --auto            Find a connected Flipper, pull *.mfkey32.log / *.nested.log");
-    println!("                    from /ext/nfc, delete them, run the attack and upload the");
-    println!("                    recovered keys to /ext/nfc/assets/mf_classic_dict_user.nfc");
-    println!("  --port <PORT>     (optional) Serial port of the Flipper (skip auto-detect)");
-    println!("  --out <DIR>       (optional) Directory for local copies of logs/keys");
-}
-
-fn parse_args() -> Option<Args> {
-    let argv: Vec<String> = std::env::args().collect();
-    let program = argv
-        .first()
-        .cloned()
-        .unwrap_or_else(|| MFKEY_NAME.to_string());
-
-    for a in argv.iter().skip(1) {
-        if a == "-h" || a == "--help" {
-            print_usage(&program);
-            return None;
-        }
-        if a == "--version" {
-            println!("{} version {}", MFKEY_NAME, MFKEY_VERSION);
-            println!("Flipper Zero :: MIFARE Classic Key Recovery Tool");
-            return None;
-        }
-    }
-
-    let mut positionals: Vec<String> = Vec::new();
-    let mut no_ui = false;
-    for a in argv.iter().skip(1) {
-        if a == "--no-ui" {
-            no_ui = true;
-        } else {
-            positionals.push(a.clone());
-        }
-    }
-
-    if positionals.is_empty() {
-        print_usage(&program);
-        return None;
-    }
-
-    let input_file = positionals[0].clone();
-    let output_file = positionals
-        .get(1)
-        .cloned()
-        .unwrap_or_else(|| "mf_classic_dict_user.nfc".to_string());
-    let dict_output_dir = positionals.get(2).cloned();
-
-    Some(Args {
-        input_file,
-        output_file,
-        dict_output_dir,
-        no_ui,
-    })
-}
 
 fn save_keys_to_file(path: &str, keys: &[MfClassicKey]) -> std::io::Result<()> {
     if keys.is_empty() {
@@ -165,36 +75,25 @@ fn save_candidate_dict(uid: u32, keys: &[(u8, MfClassicKey)], output_dir: Option
 }
 
 fn main() {
-    let argv: Vec<String> = std::env::args().collect();
-    if argv.iter().any(|a| a == "--auto") {
-        let port_override = argv
-            .iter()
-            .position(|a| a == "--port")
-            .and_then(|i| argv.get(i + 1))
-            .map(|s| s.as_str());
-
-        let out_dir = argv
-            .iter()
-            .position(|a| a == "--out")
-            .and_then(|i| argv.get(i + 1))
-            .map(std::path::PathBuf::from);
-
-        let no_ui = argv.iter().any(|a| a == "--no-ui");
-
-        match auto::run_auto(port_override, out_dir.as_deref(), no_ui) {
-            Ok(()) => process::exit(0),
-            Err(e) => {
-                eprintln!("\x1b[31mAUTO failed:\x1b[0m {e}");
-                process::exit(1);
+    match params::parse() {
+        Params::Auto(auto_params) => {
+            match auto::run_auto(
+                auto_params.port.as_deref(),
+                auto_params.out_dir.as_deref(),
+                auto_params.no_ui,
+            ) {
+                Ok(()) => process::exit(0),
+                Err(e) => {
+                    eprintln!("\x1b[31mAUTO failed:\x1b[0m {e}");
+                    process::exit(1);
+                }
             }
         }
+        Params::Run(args) => run(args),
     }
+}
 
-    let args = match parse_args() {
-        Some(a) => a,
-        None => process::exit(0),
-    };
-
+fn run(args: RunParams) {
     let ui_opts = UiOptions {
         no_ui: args.no_ui,
         use_colors: !args.no_ui,

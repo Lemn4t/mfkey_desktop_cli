@@ -4,6 +4,8 @@
 
 ### Added
 
+- Migrated CLI parsing to `clap`; added `params` module for argument handling.
+
 ### Updated
 
 ### Fixed
