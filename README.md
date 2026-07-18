@@ -27,7 +27,7 @@ Ready-made builds for Windows, Linux and macOS are available on the releases pag
 
 ## ✨ Features
 
-- ⚡ **High-performance Crypto-1 core in C**, based on [crapto1](https://github.com/RfidResearchGroup/proxmark3) — the open-source Crypto-1 cipher implementation used across the Proxmark3/libnfc ecosystem
+- ⚡ **High-performance recovery core in C**, based on [crapto1](https://github.com/RfidResearchGroup/proxmark3) — the open-source library that exploits known weaknesses in the Crypto-1 cipher (the proprietary NXP cipher used by MIFARE Classic cards) to recover keys, used across the Proxmark3/libnfc ecosystem
 - 🦀 **Thin, safe Rust layer** on top — parsing, attack orchestration, progress, and CLI
 - 🎯 Support for **three attack types**, auto-detected from the input file:
   - `mfkey32` — key recovery from two intercepted authentications (Mfkey32 / Moebius)
@@ -160,13 +160,13 @@ The binary will be in `target/release/`.
 
 | Layer                 | Language     | Responsibility                                              |
 | --------------------- | ------------ | ------------------------------------------------------------ |
-| Crypto-1 core          | **C**        | LFSR state recovery, MSB-table search (crapto1-based)         |
+| Recovery core           | **C**        | LFSR state recovery, MSB-table search (crapto1-based)          |
 | Attack engine & parser | **Rust**     | Nonce parsing, attack orchestration, progress reporting        |
 | FFI bridge             | **Rust ↔ C** | Passing structures and callbacks between the two layers        |
 | Flipper RPC (USB)      | **Rust**     | Serial transport, protobuf framing, Storage read/write/delete   |
 | CLI & UI               | **Rust**     | Argument parsing (clap), console output, progress bar          |
 
-The attacks exploit known cryptographic weaknesses in the Crypto-1 cipher used by MIFARE Classic cards. In `--auto` mode, the tool speaks the Flipper Zero's **Protobuf RPC** protocol over USB-CDC — it starts an RPC session and uses `Storage*` commands to list, read, write, and delete files on the device.
+**Crypto-1** is the proprietary stream cipher NXP built into MIFARE Classic cards for authentication. **crapto1** is the open-source library (from the Proxmark3/RfidResearchGroup project) that exploits known cryptographic weaknesses in Crypto-1 to recover keys — this is what the C core in this repo is based on. In `--auto` mode, the tool also speaks the Flipper Zero's **Protobuf RPC** protocol over USB-CDC — it starts an RPC session and uses `Storage*` commands to list, read, write, and delete files on the device.
 
 ---
 
