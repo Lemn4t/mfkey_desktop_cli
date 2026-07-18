@@ -18,7 +18,6 @@ fn main() {
             build.flag_if_supported("/O2");
             build.flag_if_supported("/Oi");
             build.flag_if_supported("/Ot");
-            build.flag_if_supported("/GL");
         }
         if native {
             build.flag_if_supported("/arch:AVX2");

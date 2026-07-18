@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.6] - 2026-07-18
+
+### Added
+
+### Updated
+
+### Fixed
+
+- Remove /GL flag from MSVC build
+
 ## [1.0.5] - 2026-07-18
 
 ### Added
