@@ -1,5 +1,6 @@
 mod upload;
 
+use crate::core::disclaimer::resolve_disclaimer_acceptance;
 use crate::core::engine;
 use crate::core::model::MfClassicKey;
 use crate::core::parser;
@@ -26,12 +27,16 @@ pub fn run_auto(
     port_override: Option<&str>,
     out_dir: Option<&Path>,
     no_ui: bool,
+    auto_accept_disclaimer: bool,
 ) -> Result<(), String> {
-    let ui = Arc::new(Ui::new(UiOptions {
+    let ui_opts = UiOptions {
         no_ui,
         use_colors: !no_ui,
-    }));
-
+    };
+    let ui = Arc::new(Ui::new(ui_opts));
+    if !resolve_disclaimer_acceptance(&ui_opts, auto_accept_disclaimer) {
+        return Ok(());
+    }
     let stop = Arc::new(AtomicBool::new(false));
     {
         let stop_clone = Arc::clone(&stop);

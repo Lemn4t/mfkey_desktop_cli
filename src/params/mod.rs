@@ -14,12 +14,14 @@ pub struct RunParams {
     pub output_file: String,
     pub dict_output_dir: Option<String>,
     pub no_ui: bool,
+    pub accept_disclaimer: bool,
 }
 
 pub struct AutoParams {
     pub port: Option<String>,
     pub out_dir: Option<PathBuf>,
     pub no_ui: bool,
+    pub accept_disclaimer: bool,
 }
 
 pub fn parse() -> Params {
@@ -31,6 +33,7 @@ pub fn parse() -> Params {
             port: cli.port,
             out_dir: cli.out,
             no_ui: cli.no_ui,
+            accept_disclaimer: cli.accept_disclaimer,
         });
     }
 
@@ -41,5 +44,6 @@ pub fn parse() -> Params {
         output_file: cli.output_file,
         dict_output_dir: cli.dict_output_dir,
         no_ui: cli.no_ui,
+        accept_disclaimer: cli.accept_disclaimer,
     })
 }
