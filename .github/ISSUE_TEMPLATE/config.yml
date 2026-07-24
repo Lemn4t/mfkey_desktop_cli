@@ -1,11 +1,11 @@
 blank_issues_enabled: true
 contact_links:
   - name: 📖 Documentation & Usage (README)
-    url: https://github.com/Lemn4t/mfkey_desktop_cli#readme
+    url: https://github.com/phntm-lab/mfkey_desktop_cli#readme
     about: Please read the README before opening an issue — it covers usage, --auto mode and platform-specific setup.
   - name: ⬇️ Releases (pre-built binaries)
-    url: https://github.com/Lemn4t/mfkey_desktop_cli/releases
+    url: https://github.com/phntm-lab/mfkey_desktop_cli/releases
     about: Download ready-made builds for your platform here.
   - name: ⚖️ Security & responsible use
-    url: https://github.com/Lemn4t/mfkey_desktop_cli#%EF%B8%8F-disclaimer
+    url: https://github.com/phntm-lab/mfkey_desktop_cli#%EF%B8%8F-disclaimer
     about: This tool is for security research on your own cards or with explicit permission only.

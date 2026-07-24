@@ -70,9 +70,10 @@ See [Automatic mode](#-automatic-mode---auto) below for details.
 Usage: mfkey_desktop_cli [OPTIONS] <.nested.log/.mfkey32.log> [output_keys.nfc] [dict_output_dir]
 
 OPTIONS:
-  -h, --help        Show the help message and exit
-  --no-ui           Disable the interactive UI and use plain text output
-  --version         Show version information
+  -h, --help            Show the help message and exit
+  --no-ui               Disable the interactive UI and use plain text output
+  --version             Show version information
+  --accept-disclaimer   Accept the disclaimer/terms of use non-interactively (see Disclaimer below)
 
 AUTO MODE (Flipper Zero over USB):
   --auto            Find a connected Flipper, pull *.mfkey32.log / *.nested.log
@@ -177,10 +178,13 @@ The binary will be in `target/release/`.
 >
 > The author is not responsible for any misuse. Use at your own risk and in accordance with the laws of your jurisdiction.
 
+On first run, the tool shows this disclaimer and asks you to accept it (`y`/`N`) before proceeding; your answer is saved to a local config file, so you won't be asked again. Use `--accept-disclaimer` to accept it non-interactively (e.g. in scripts) without a saved answer.
+
 ---
 
 ## 🙏 Credits
 
+- [atomofiron](https://github.com/atomofiron) — major contributions to refactoring and improving the codebase
 - [Proxmark3 / RfidResearchGroup](https://github.com/RfidResearchGroup/proxmark3) — Crypto-1 / crapto1 recovery algorithm
 - [mfkey / noproto](https://github.com/noproto/xero-firmware/tree/dev/applications/system/mfkey) — Flipper Zero MFKey app
 - [Flipper Zero Protobuf](https://github.com/flipperdevices/flipperzero-protobuf) — RPC protocol definitions

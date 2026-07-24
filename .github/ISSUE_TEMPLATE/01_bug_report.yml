@@ -1,7 +1,7 @@
 name: "🐛 Bug Report"
 description: Report a reproducible bug or unexpected behavior in mfkey_desktop_cli
 title: "[Bug]: "
-labels: ["bug", "triage"]
+labels: ["type/bug"]
 body:
   - type: markdown
     attributes:
@@ -17,7 +17,7 @@ body:
       options:
         - label: I have searched the [existing issues](../issues) and this bug has not been reported yet.
           required: true
-        - label: I am using the latest version (or the latest release) of mfkey_desktop_cli.
+        - label: I am using the latest release (or a recent `dev` build, which is best-effort supported).
           required: true
         - label: I have read the README, including the notes about closing qFlipper / Web Updater / serial terminals before using `--auto`.
           required: true
@@ -112,7 +112,7 @@ body:
     attributes:
       label: mfkey_desktop_cli version
       description: Output of `mfkey_desktop_cli --version` or the release tag you downloaded.
-      placeholder: "e.g. v1.0.3"
+      placeholder: "e.g. v2.4.1 (or a commit hash if built from dev)"
     validations:
       required: true
 

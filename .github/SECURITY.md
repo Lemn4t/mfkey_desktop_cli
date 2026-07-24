@@ -1,6 +1,6 @@
 # Security Policy
 
-## ? Scope & Intended Use
+## 🎯 Scope & Intended Use
 
 `mfkey_desktop_cli` is a **security research tool** for recovering MIFARE
 Classic keys from Flipper Zero logs. It is intended **exclusively** for use on
@@ -14,7 +14,7 @@ intentionally exploits and which are out of scope.
 
 ---
 
-## ? Supported Versions
+## 🛡️ Supported Versions
 
 Security fixes are applied to the latest release. Older releases are not
 maintained — please update to the most recent version before reporting.
@@ -26,11 +26,11 @@ maintained — please update to the most recent version before reporting.
 | `dev` branch   | ✅ Best-effort |
 
 You can always find the latest version on the
-[Releases page](https://github.com/Lemn4t/mfkey_desktop_cli/releases).
+[Releases page](https://github.com/phntm-lab/mfkey_desktop_cli/releases).
 
 ---
 
-## ? Reporting a Vulnerability
+## 📮 Reporting a Vulnerability
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
@@ -38,7 +38,7 @@ Instead, report them privately using one of the following channels:
 
 1. **GitHub Security Advisories (preferred):**
    Use the
-   [_Report a vulnerability_](https://github.com/Lemn4t/mfkey_desktop_cli/security/advisories/new)
+   [_Report a vulnerability_](https://github.com/phntm-lab/mfkey_desktop_cli/security/advisories/new)
    button under the **Security** tab to open a private advisory.
 
 2. **Private message:**
@@ -73,7 +73,7 @@ reasonable amount of time to address the issue before any public disclosure.
 
 ---
 
-## ? Examples of In-Scope Vulnerabilities
+## ✅ Examples of In-Scope Vulnerabilities
 
 - Memory-safety issues in the C core or at the Rust ↔ C FFI boundary
   (buffer overflows, use-after-free, out-of-bounds reads/writes).
@@ -84,7 +84,7 @@ reasonable amount of time to address the issue before any public disclosure.
   unexpectedly (e.g. overwriting unintended files via `Storage*` commands).
 - Dependency vulnerabilities that materially affect the tool.
 
-## ? Out of Scope
+## ⛔ Out of Scope
 
 - The inherent cryptographic weaknesses of MIFARE Classic / Crypto-1 (these
   are the basis of the tool's functionality).
@@ -95,4 +95,4 @@ reasonable amount of time to address the issue before any public disclosure.
 
 ---
 
-Thank you for helping keep `mfkey_desktop_cli` and its users safe! ?
+Thank you for helping keep `mfkey_desktop_cli` and its users safe! 🙏

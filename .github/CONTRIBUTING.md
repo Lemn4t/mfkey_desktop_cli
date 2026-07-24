@@ -1,6 +1,6 @@
 # Contributing to MFKey Desktop CLI
 
-First off — thank you for taking the time to contribute! ?
+First off — thank you for taking the time to contribute! 🙏
 
 `mfkey_desktop_cli` is a cross-platform MIFARE Classic key-recovery tool for
 Flipper Zero, built with a **high-performance Crypto-1 core in C** and a
@@ -13,7 +13,7 @@ performance improvements, new attacks, documentation, and more.
 
 ---
 
-## ? Code of Conduct
+## 🤝 Code of Conduct
 
 Be respectful, constructive and patient. We're all here to build something
 useful together. Harassment or hostile behavior of any kind will not be
@@ -33,20 +33,20 @@ of your country.
 
 ---
 
-## ? How Can I Contribute?
+## 🙋 How Can I Contribute?
 
 ### Reporting bugs
 
-- Search [existing issues](https://github.com/Lemn4t/mfkey_desktop_cli/issues)
+- Search [existing issues](https://github.com/phntm-lab/mfkey_desktop_cli/issues)
   first to avoid duplicates.
-- Open a new issue using the **? Bug Report** template and fill it out as
+- Open a new issue using the **🐛 Bug Report** template and fill it out as
   completely as possible (OS, version, attack type, `--auto` vs single file,
   Flipper firmware, logs).
 
 ### Suggesting changes
 
 - For improvements to existing behavior, use the **⚡ Enhancement** template.
-- For brand-new functionality, use the **? Feature Request** template.
+- For brand-new functionality, use the **🎯 Feature Request** template.
 
 ### Contributing code
 
@@ -56,13 +56,13 @@ of your country.
 
 ---
 
-## ?️ Development Setup
+## 🛠️ Development Setup
 
 You will need the [Rust toolchain](https://rustup.rs/) and a C compiler
 (MSVC / GCC / Clang).
 
 ```bash
-git clone https://github.com/Lemn4t/mfkey_desktop_cli.git
+git clone https://github.com/phntm-lab/mfkey_desktop_cli.git
 cd mfkey_desktop_cli
 cargo build --release
 ```
@@ -95,7 +95,7 @@ The compiled binary appears in `target/release/`.
 
 ---
 
-## ? Branching & Workflow
+## 🌿 Branching & Workflow
 
 - The default development branch is **`dev`**. Please **base your work on
   `dev`** and target your pull requests at `dev`.
@@ -138,7 +138,7 @@ cargo build --release        # builds cleanly
 
 ---
 
-## ? Commit Messages
+## 📝 Commit Messages
 
 Write clear, descriptive commit messages. We recommend a
 [Conventional Commits](https://www.conventionalcommits.org/)-style prefix:
@@ -155,14 +155,14 @@ Reference related issues where applicable (e.g. `Closes #42`).
 
 ---
 
-## ? Submitting a Pull Request
+## 📬 Submitting a Pull Request
 
 1. Fork the repository and create your branch from `dev`.
 2. Make your changes following the standards above.
 3. Test on at least one platform; if possible, note which attack types and
    whether you tested offline (single file) and/or `--auto` (live device).
 4. Fill out the **pull request template** completely.
-5. Ensure CI / local checks pass (`fmt`, `clippy`, `build`).
+5. Run local checks yourself before opening the PR (`fmt`, `clippy`, `build`) — there is currently no automated CI on pull requests, only on pushes to `dev`/`release`.
 6. Open the PR against `dev` and link any related issues.
 
 A maintainer will review your PR. Please be responsive to feedback — small
@@ -170,10 +170,10 @@ follow-up commits are perfectly fine.
 
 ---
 
-## ? Questions
+## ❓ Questions
 
 For general questions or discussion you can reach out via
 [Telegram](https://t.me/Lemn4t). For bugs and feature ideas,
 please use the issue templates.
 
-Thanks again for contributing! ?
+Thanks again for contributing! 🎉
