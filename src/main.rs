@@ -79,7 +79,7 @@ fn main() {
             match auto::run_auto(
                 auto_params.port.as_deref(),
                 auto_params.out_dir.as_deref(),
-                auto_params.no_ui,
+                auto_params.plain_ui,
                 auto_params.accept_disclaimer,
             ) {
                 Ok(()) => process::exit(0),
@@ -95,8 +95,7 @@ fn main() {
 
 fn run(args: RunParams) {
     let ui_opts = UiOptions {
-        no_ui: args.no_ui,
-        use_colors: !args.no_ui,
+        plain_ui: args.plain_ui,
     };
     let ui = Arc::new(Ui::new(ui_opts));
     if !resolve_disclaimer_acceptance(&ui_opts, args.accept_disclaimer) {
@@ -184,7 +183,7 @@ fn run(args: RunParams) {
         ui.show_no_keys_found();
     }
 
-    if !args.no_ui && (found_count > 0 || candidate_total_count > 0) {
+    if !args.plain_ui && (found_count > 0 || candidate_total_count > 0) {
         let confirmed = ui.confirm("Should I show the full path to the saved files?", false);
 
         if confirmed {

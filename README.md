@@ -70,7 +70,7 @@ Usage: mfkey_desktop_cli [OPTIONS] <.nested.log/.mfkey32.log> [output_keys.nfc] 
 
 OPTIONS:
   -h, --help            Show the help message and exit
-  --no-ui               Disable the interactive UI and use plain text output
+  --plain               Disable the interactive UI and use plain text output
   --version             Show version information
   --accept-disclaimer   Accept the disclaimer/terms of use non-interactively (see Disclaimer below)
 

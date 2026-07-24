@@ -8,16 +8,12 @@ use std::time::Duration;
 
 #[derive(Debug, Clone, Copy)]
 pub struct UiOptions {
-    pub no_ui: bool,
-    pub use_colors: bool,
+    pub plain_ui: bool,
 }
 
 impl Default for UiOptions {
     fn default() -> Self {
-        UiOptions {
-            no_ui: false,
-            use_colors: true,
-        }
+        UiOptions { plain_ui: true }
     }
 }
 
@@ -43,11 +39,11 @@ impl Ui {
     }
 
     fn colored(&self) -> bool {
-        self.opts.use_colors && !self.opts.no_ui
+        !self.opts.plain_ui
     }
 
     pub fn show_title(&self) {
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             println!("MIFARE Classic Key Recovery Tool");
             println!("{}", "=".repeat(64));
             return;
@@ -78,7 +74,7 @@ impl Ui {
     }
 
     pub fn show_config(&self, input: &str, output: &str, dict_dir: Option<&str>) {
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             println!("Input file:  {}", input);
             println!("Output file: {}", output);
             if let Some(d) = dict_dir {
@@ -111,7 +107,7 @@ impl Ui {
     }
 
     pub fn show_loading(&self, filename: &str) {
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             println!("Loading nonces from {}...", filename);
         } else {
             println!("▪▫▪ Loading nonces from {}...", filename);
@@ -119,7 +115,7 @@ impl Ui {
     }
 
     pub fn show_nonce_loaded(&self, index: usize, uid: u32, attack_type: &str) {
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             println!(
                 "Loaded nonce {}: UID=0x{:08X}, attack={}",
                 index, uid, attack_type
@@ -140,7 +136,7 @@ impl Ui {
     }
 
     pub fn show_loading_complete(&self, total: usize) {
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             println!("Total nonces loaded: {}\n", total);
         } else {
             let n = if self.colored() {
@@ -153,7 +149,7 @@ impl Ui {
     }
 
     pub fn show_start(&self) {
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             println!("Starting key recovery... (Press Ctrl+C to stop gracefully.)\n");
             return;
         }
@@ -168,7 +164,7 @@ impl Ui {
     }
 
     pub fn begin_progress(&self, total_nonces: usize) {
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             return;
         }
         let mut inner = self.inner.lock().unwrap();
@@ -197,7 +193,7 @@ impl Ui {
         stage_progress: f32,
         uid: u32,
     ) {
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             let nonce_pct = if nonce_total > 0 {
                 nonce_current as f32 / nonce_total as f32 * 100.0
             } else {
@@ -238,7 +234,7 @@ impl Ui {
         }
         inner.total_nonces = 0;
 
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             println!();
         }
     }
@@ -253,7 +249,7 @@ impl Ui {
             }
         };
 
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             print_line(format!("Found key: {}", key.to_hex()));
             return;
         }
@@ -269,7 +265,7 @@ impl Ui {
     pub fn show_summary(&self, total_nonces: usize, found_keys: usize, candidate_keys: usize) {
         self.clear_progress();
 
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             println!("\n{}", "=".repeat(64));
             println!("Key recovery completed!\n");
             println!("Summary:");
@@ -306,7 +302,7 @@ impl Ui {
             return;
         }
 
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             println!("\nFound Keys:");
             for k in keys {
                 println!("  {}", k.to_hex());
@@ -360,7 +356,7 @@ impl Ui {
     }
 
     pub fn show_no_keys_found(&self) {
-        if self.opts.no_ui {
+        if self.opts.plain_ui {
             println!("No keys were recovered. This could happen if:");
             println!("  * The nonces are invalid or corrupted");
             println!("  * The keyspace being searched doesn't contain the key");

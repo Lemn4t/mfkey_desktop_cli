@@ -26,13 +26,10 @@ fn is_target_log(name: &str) -> bool {
 pub fn run_auto(
     port_override: Option<&str>,
     out_dir: Option<&Path>,
-    no_ui: bool,
+    plain_ui: bool,
     auto_accept_disclaimer: bool,
 ) -> Result<(), String> {
-    let ui_opts = UiOptions {
-        no_ui,
-        use_colors: !no_ui,
-    };
+    let ui_opts = UiOptions { plain_ui };
     let ui = Arc::new(Ui::new(ui_opts));
     if !resolve_disclaimer_acceptance(&ui_opts, auto_accept_disclaimer) {
         return Ok(());
