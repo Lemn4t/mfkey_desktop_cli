@@ -77,8 +77,9 @@ fn pill_was_taken(opts: &UiOptions, pill: String) -> String {
 }
 
 fn resolve(opts: &UiOptions, color: Color, text: &str) -> String {
-    match !opts.no_ui && opts.use_colors {
-        true => text.color(color),
-        false => text.clear(),
-    }.to_string()
+    match opts.plain_ui {
+        true => text.clear(),
+        false => text.color(color),
+    }
+    .to_string()
 }

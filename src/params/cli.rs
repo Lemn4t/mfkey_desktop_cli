@@ -17,8 +17,9 @@ pub struct Cli {
     #[arg(value_name = "DICT_OUTPUT_DIR")]
     pub dict_output_dir: Option<String>,
 
+    /// Disable colors and decorative Unicode characters
     #[arg(long)]
-    pub no_ui: bool,
+    pub plain: bool,
 
     #[arg(long)]
     pub auto: bool,
