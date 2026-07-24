@@ -3,7 +3,7 @@ use std::path::PathBuf;
 #[cfg(unix)]
 const CONFIG_DIR: &str = ".config";
 const PROGRAM_DIR: &str = "mfkey";
-const CONFIG_FILE: &str = "comfig.yaml";
+const CONFIG_FILE: &str = "config.yaml";
 
 #[cfg(unix)]
 pub fn config_path() -> PathBuf {
