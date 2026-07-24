@@ -4,6 +4,8 @@
 
 ### Added
 
+- Add one-time startup disclaimer
+
 ### Updated
 
 ### Fixed
