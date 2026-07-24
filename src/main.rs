@@ -1,5 +1,6 @@
 mod auto;
 mod core;
+pub mod ext;
 mod flipper;
 mod params;
 mod ui;
@@ -29,6 +30,7 @@ pub mod pb {
     include!(concat!(env!("OUT_DIR"), "/pb.rs"));
 }
 
+use crate::core::disclaimer::resolve_disclaimer_acceptance;
 use crate::core::engine;
 use crate::core::model::MfClassicKey;
 use crate::core::state::AttackState;
@@ -78,6 +80,7 @@ fn main() {
                 auto_params.port.as_deref(),
                 auto_params.out_dir.as_deref(),
                 auto_params.no_ui,
+                auto_params.accept_disclaimer,
             ) {
                 Ok(()) => process::exit(0),
                 Err(e) => {
@@ -96,7 +99,9 @@ fn run(args: RunParams) {
         use_colors: !args.no_ui,
     };
     let ui = Arc::new(Ui::new(ui_opts));
-
+    if !resolve_disclaimer_acceptance(&ui_opts, args.accept_disclaimer) {
+        return;
+    }
     let stop = Arc::new(AtomicBool::new(false));
     {
         let stop_clone = Arc::clone(&stop);
