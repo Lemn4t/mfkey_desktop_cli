@@ -5,13 +5,12 @@
 **A cross-platform CLI tool for recovering MIFARE Classic keys from Flipper Zero nonce logs**
 
 [![Latest Release](https://img.shields.io/github/v/release/phntm-lab/mfkey_desktop_cli?style=for-the-badge&logo=github&color=blue)](https://github.com/phntm-lab/mfkey_desktop_cli/releases/latest)
-[![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/phntm-lab/mfkey_desktop_cli/latest/total?style=for-the-badge&logo=github&color=success)](https://github.com/phntm-lab/mfkey_desktop_cli/releases/latest)
+[![Total Downloads](https://img.shields.io/github/downloads/phntm-lab/mfkey_desktop_cli/total?style=for-the-badge&logo=github&color=success)](https://github.com/phntm-lab/mfkey_desktop_cli/releases)
+[![GitHub License](https://img.shields.io/github/license/phntm-lab/mfkey_desktop_cli?style=for-the-badge&color=orange)](LICENSE)
 
 [![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)](<https://en.wikipedia.org/wiki/C_(programming_language)>)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=for-the-badge)](https://github.com/phntm-lab/mfkey_desktop_cli/releases)
-
-[![GitHub License](https://img.shields.io/github/license/phntm-lab/mfkey_desktop_cli?style=for-the-badge&color=orange)](LICENSE)
 
 </div>
 
