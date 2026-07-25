@@ -132,22 +132,32 @@ pub fn run_auto(
         ui.show_loading(&log_str);
 
         let ui_for_load = Arc::clone(&ui);
-        let nonces = match parser::load_nested_nonces(&log_str, |idx, uid, name| {
-            ui_for_load.show_nonce_loaded(idx, uid, name);
-        }) {
-            Ok(n) => n,
-            Err(e) => {
-                eprintln!("Failed to parse {log_str}: {e}");
-                continue;
-            }
-        };
+        let (nonces, hardnested_detected) =
+            match parser::load_nested_nonces(&log_str, |idx, uid, name| {
+                ui_for_load.show_nonce_loaded(idx, uid, name);
+            }) {
+                Ok(n) => n,
+                Err(e) => {
+                    eprintln!("Failed to parse {log_str}: {e}");
+                    continue;
+                }
+            };
 
         if nonces.is_empty() {
-            eprintln!("No nonces loaded from {log_str}, skipping.");
+            if hardnested_detected {
+                ui.show_hardnested_unsupported(Some(&log_str), true);
+            } else {
+                eprintln!("No nonces loaded from {log_str}, skipping.");
+            }
             continue;
         }
 
         ui.show_loading_complete(nonces.len());
+
+        if hardnested_detected {
+            ui.show_hardnested_note(Some(&log_str));
+        }
+
         ui.show_start();
 
         let mut attack_state = AttackState::new(Arc::clone(&ui), Arc::clone(&stop), nonces.len());

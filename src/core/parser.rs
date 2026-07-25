@@ -98,7 +98,17 @@ fn parse_nested_line(tokens: &[&str]) -> Option<Nonce> {
     Some(nonce)
 }
 
-pub fn load_nested_nonces<P, F>(path: P, mut on_loaded: F) -> std::io::Result<Vec<Nonce>>
+fn is_hardnested_line(trimmed: &str, tokens: &[&str]) -> bool {
+    tokens.contains(&"Sec")
+        && tokens.contains(&"key")
+        && tokens.contains(&"cuid")
+        && tokens.contains(&"nt0")
+        && tokens.contains(&"ks0")
+        && tokens.contains(&"par0")
+        && !trimmed.contains("dist")
+}
+
+pub fn load_nested_nonces<P, F>(path: P, mut on_loaded: F) -> std::io::Result<(Vec<Nonce>, bool)>
 where
     P: AsRef<Path>,
     F: FnMut(usize, u32, &str),
@@ -107,6 +117,7 @@ where
     let reader = BufReader::new(file);
 
     let mut nonces: Vec<Nonce> = Vec::new();
+    let mut hardnested_detected = false;
 
     for line_res in reader.lines() {
         let line = match line_res {
@@ -126,6 +137,11 @@ where
             && tokens.contains(&"nr1")
             && tokens.contains(&"ar1");
 
+        if !is_mfkey32 && is_hardnested_line(trimmed, &tokens) {
+            hardnested_detected = true;
+            continue;
+        }
+
         let parsed = if is_mfkey32 {
             parse_mfkey32_line(&tokens)
         } else if trimmed.contains("dist 0") {
@@ -142,5 +158,5 @@ where
         }
     }
 
-    Ok(nonces)
+    Ok((nonces, hardnested_detected))
 }

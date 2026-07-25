@@ -122,22 +122,31 @@ fn run(args: RunParams) {
     ui.show_loading(&args.input_file);
 
     let ui_for_load = Arc::clone(&ui);
-    let nonces = match core::parser::load_nested_nonces(&args.input_file, |idx, uid, name| {
-        ui_for_load.show_nonce_loaded(idx, uid, name);
-    }) {
-        Ok(n) => n,
-        Err(e) => {
-            eprintln!("Failed to open file: {} ({})", args.input_file, e);
-            process::exit(1);
-        }
-    };
+    let (nonces, hardnested_detected) =
+        match core::parser::load_nested_nonces(&args.input_file, |idx, uid, name| {
+            ui_for_load.show_nonce_loaded(idx, uid, name);
+        }) {
+            Ok(n) => n,
+            Err(e) => {
+                eprintln!("Failed to open file: {} ({})", args.input_file, e);
+                process::exit(1);
+            }
+        };
 
     if nonces.is_empty() {
-        eprintln!("Failed to load nonces from file!");
+        if hardnested_detected {
+            ui.show_hardnested_unsupported(None, false);
+        } else {
+            eprintln!("Failed to load nonces from file!");
+        }
         process::exit(1);
     }
 
     ui.show_loading_complete(nonces.len());
+
+    if hardnested_detected {
+        ui.show_hardnested_note(None);
+    }
 
     ui.show_start();
 

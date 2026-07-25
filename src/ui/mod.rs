@@ -148,6 +148,37 @@ impl Ui {
         }
     }
 
+    pub fn show_hardnested_unsupported(&self, context: Option<&str>, skipping: bool) {
+        let suffix = if skipping { ", skipping." } else { "." };
+        let msg = match context {
+            Some(path) => format!(
+                "HardNested nonces detected in {path} — this attack is not supported (yet){suffix}"
+            ),
+            None => {
+                format!("HardNested nonces detected — this attack is not supported (yet){suffix}")
+            }
+        };
+        if self.opts.plain_ui {
+            eprintln!("{}", msg);
+        } else {
+            eprintln!("{}", msg.yellow().bold());
+        }
+    }
+
+    pub fn show_hardnested_note(&self, context: Option<&str>) {
+        let msg = match context {
+            Some(path) => format!(
+                "Note: HardNested nonces were also found in {path} and were skipped — that attack is not supported (yet)."
+            ),
+            None => "Note: HardNested nonces were also found in this file and were skipped — that attack is not supported (yet).".to_string(),
+        };
+        if self.opts.plain_ui {
+            println!("{}", msg);
+        } else {
+            println!("{}", msg.yellow());
+        }
+    }
+
     pub fn show_start(&self) {
         if self.opts.plain_ui {
             println!("Starting key recovery... (Press Ctrl+C to stop gracefully.)\n");
