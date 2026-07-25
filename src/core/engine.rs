@@ -112,7 +112,8 @@ fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32, uid: u32)
     }
 }
 
-pub type SaveDictFn<'a> = dyn FnMut(u32, &[(u8, MfClassicKey)], Option<&str>) -> String + 'a;
+pub type SaveDictFn<'a> =
+    dyn FnMut(u32, &[(u8, MfClassicKey)], Option<&str>) -> Option<String> + 'a;
 
 pub fn run_attack(
     state: &mut AttackState,
@@ -195,8 +196,9 @@ pub fn run_attack(
 
         if !state.candidate_keys.is_empty() {
             let count = state.candidate_keys.len();
-            let path = save_dict(uid, &state.candidate_keys, dict_output_dir);
-            dict_outputs.push(DictOutput { uid, count, path });
+            if let Some(path) = save_dict(uid, &state.candidate_keys, dict_output_dir) {
+                dict_outputs.push(DictOutput { uid, count, path });
+            }
             candidate_total_count += count;
         }
         state.clear_candidates();

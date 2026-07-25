@@ -52,9 +52,10 @@ pub fn run_file_attack(
 
     let mut attack_state = AttackState::new(Arc::clone(ui), Arc::clone(stop), nonces.len());
 
-    let mut save_dict = |uid: u32, keys: &[(u8, MfClassicKey)], dir: Option<&str>| -> String {
-        save_candidate_dict(uid, keys, dir)
-    };
+    let mut save_dict = |uid: u32,
+                         keys: &[(u8, MfClassicKey)],
+                         dir: Option<&str>|
+     -> Option<String> { save_candidate_dict(uid, keys, dir) };
 
     let (candidate_total_count, dict_outputs) =
         engine::run_attack(&mut attack_state, &nonces, dict_output_dir, &mut save_dict);
@@ -70,7 +71,11 @@ pub fn run_file_attack(
     }))
 }
 
-fn save_candidate_dict(uid: u32, keys: &[(u8, MfClassicKey)], output_dir: Option<&str>) -> String {
+fn save_candidate_dict(
+    uid: u32,
+    keys: &[(u8, MfClassicKey)],
+    output_dir: Option<&str>,
+) -> Option<String> {
     let filename = format!("mf_classic_dict_{:08x}.nfc", uid);
     let path = match output_dir {
         Some(dir) => Path::new(dir).join(&filename),
@@ -78,13 +83,16 @@ fn save_candidate_dict(uid: u32, keys: &[(u8, MfClassicKey)], output_dir: Option
     };
     let path_str = path.to_string_lossy().to_string();
 
-    if let Ok(mut file) = fs::File::create(&path) {
-        for (key_idx, k) in keys {
-            let _ = writeln!(file, "{:02X}{}", key_idx, k.to_hex());
+    match fs::File::create(&path) {
+        Ok(mut file) => {
+            for (key_idx, k) in keys {
+                let _ = writeln!(file, "{:02X}{}", key_idx, k.to_hex());
+            }
+            Some(path_str)
         }
-    } else {
-        eprintln!("Failed to create dictionary file: {}", path_str);
+        Err(_) => {
+            eprintln!("Failed to create dictionary file: {}", path_str);
+            None
+        }
     }
-
-    path_str
 }
