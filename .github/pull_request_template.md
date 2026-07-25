@@ -7,7 +7,8 @@ Closes #
 ## 🧩 Type of change
 
 - [ ] 🐛 Bug fix
-- [ ] ⚡ Enhancement / 🎯 New feature
+- [ ] ⚡ Enhancement (improves existing functionality)
+- [ ] 🎯 New feature
 - [ ] 💥 Breaking change
 - [ ] 📄 Documentation / 🧹 Refactor (no functional changes)
 
