@@ -52,6 +52,17 @@ fn save_keys_to_file(path: &str, keys: &[MfClassicKey]) -> std::io::Result<()> {
     Ok(())
 }
 
+fn display_path(p: &std::path::Path) -> String {
+    let s = p.to_string_lossy();
+    if let Some(rest) = s.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{rest}")
+    } else if let Some(rest) = s.strip_prefix(r"\\?\") {
+        rest.to_string()
+    } else {
+        s.into_owned()
+    }
+}
+
 fn main() {
     match params::parse() {
         Params::Auto(auto_params) => {
@@ -162,11 +173,11 @@ fn run(args: RunParams) {
             if let Some(kf) = keys_file
                 && let Ok(abs) = std::fs::canonicalize(kf)
             {
-                println!("  keys: {}", abs.display());
+                println!("  keys: {}", display_path(&abs));
             }
             for d in &dict_outputs {
                 if let Ok(abs) = std::fs::canonicalize(&d.path) {
-                    println!("  dict (uid 0x{:08X}): {}", d.uid, abs.display());
+                    println!("  dict (uid 0x{:08X}): {}", d.uid, display_path(&abs));
                 }
             }
         }
