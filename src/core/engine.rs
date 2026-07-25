@@ -2,6 +2,7 @@ use crate::core::ffi::{AttackType, CCallbacks, CNonce, MF_CLASSIC_KEY_SIZE, cryp
 use crate::core::model::{MfClassicKey, Nonce};
 use crate::core::state::{AttackContext, AttackState, TaskState};
 use rayon::prelude::*;
+use std::collections::HashMap;
 use std::os::raw::{c_float, c_int, c_void};
 use std::slice;
 use std::sync::Arc;
@@ -156,28 +157,29 @@ pub fn run_attack(
         }
     }
 
-    let mut unique_uids: Vec<u32> = Vec::new();
+    let mut uid_order: Vec<u32> = Vec::new();
+    let mut groups: HashMap<u32, Vec<&Nonce>> = HashMap::new();
     for n in nonces.iter() {
-        if n.attack == AttackType::StaticEncrypted && !unique_uids.contains(&n.uid) {
-            unique_uids.push(n.uid);
+        if n.attack == AttackType::StaticEncrypted {
+            groups
+                .entry(n.uid)
+                .or_insert_with(|| {
+                    uid_order.push(n.uid);
+                    Vec::new()
+                })
+                .push(n);
         }
     }
 
     let mut dict_outputs: Vec<DictOutput> = Vec::new();
     let mut candidate_total_count: usize = 0;
 
-    for &uid in unique_uids.iter() {
+    for uid in uid_order {
         if ctx.should_stop() {
             break;
         }
 
-        let group: Vec<&Nonce> = nonces
-            .iter()
-            .filter(|n| n.attack == AttackType::StaticEncrypted && n.uid == uid)
-            .collect();
-        if group.is_empty() {
-            continue;
-        }
+        let group = &groups[&uid];
 
         let results: Vec<TaskResult> = group
             .par_iter()
