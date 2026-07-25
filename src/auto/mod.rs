@@ -95,6 +95,7 @@ pub fn run_auto(
     );
 
     let mut local_logs: Vec<PathBuf> = Vec::new();
+    let mut remote_logs: Vec<String> = Vec::new();
     for name in &targets {
         let remote = format!("{NFC_DIR}/{name}");
         println!("{} {}", "↓ Downloading".cyan(), remote);
@@ -112,10 +113,7 @@ pub fn run_auto(
             data.len()
         );
         local_logs.push(local);
-
-        println!("{} {}", "✗ Deleting from device".cyan(), remote);
-        sess.storage_delete(&remote, false)
-            .map_err(|e| format!("delete {remote}: {e}"))?;
+        remote_logs.push(remote);
     }
 
     println!("{}", "→ Running attack...".cyan());
@@ -184,6 +182,18 @@ pub fn run_auto(
 
     upload::upload_dicts(&mut sess, &local_dicts);
     upload::merge_and_upload_keys(&mut sess, &all_keys, &logs_dir)?;
+
+    if !all_keys.is_empty() {
+        let should_delete = ui.confirm("Delete the original log files from the Flipper?", false);
+        if should_delete {
+            for remote in &remote_logs {
+                println!("{} {}", "✗ Deleting from device".cyan(), remote);
+                if let Err(e) = sess.storage_delete(remote, false) {
+                    eprintln!("warning: failed to delete {remote}: {e}");
+                }
+            }
+        }
+    }
 
     Ok(())
 }

@@ -3,6 +3,7 @@ use colored::*;
 use console::Term;
 use dialoguer::{Select, theme::ColorfulTheme};
 use indicatif::{ProgressBar, ProgressStyle};
+use std::io::Write;
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -408,15 +409,39 @@ impl Ui {
     }
 
     pub fn confirm(&self, prompt: &str, default_yes: bool) -> bool {
-        let theme = ColorfulTheme::default();
-        let items = &["Yes", "No"];
-        let default = if default_yes { 0 } else { 1 };
-        let choice = Select::with_theme(&theme)
-            .with_prompt(prompt)
-            .items(items)
-            .default(default)
-            .interact()
-            .unwrap_or(1);
-        choice == 0
+        if !self.opts.plain_ui {
+            let theme = ColorfulTheme::default();
+            let items = &["Yes", "No"];
+            let default = if default_yes { 0 } else { 1 };
+            let choice = Select::with_theme(&theme)
+                .with_prompt(prompt)
+                .items(items)
+                .default(default)
+                .interact()
+                .unwrap_or(1);
+            return choice == 0;
+        }
+
+        let hint = if default_yes {
+            "(Y/n, Enter = Yes)"
+        } else {
+            "(y/N, Enter = No)"
+        };
+        loop {
+            print!("{prompt} {hint}: ");
+            let _ = std::io::stdout().flush();
+
+            let mut input = String::new();
+            if std::io::stdin().read_line(&mut input).is_err() {
+                return default_yes;
+            }
+
+            match input.trim() {
+                "y" | "Y" | "yes" | "YES" => return true,
+                "n" | "N" | "no" | "NO" => return false,
+                "" => return default_yes,
+                _ => println!("Invalid answer, please type y or n."),
+            }
+        }
     }
 }
