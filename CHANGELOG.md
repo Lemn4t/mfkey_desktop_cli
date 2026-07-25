@@ -15,6 +15,7 @@
 ### Fixed
 
 - Remove /GL flag from MSVC build
+- Route all --auto/--plain output through Ui instead of raw colored calls
 
 ## [1.0.5] - 2026-07-18
 

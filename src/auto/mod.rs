@@ -8,7 +8,7 @@ use crate::core::state::AttackState;
 use crate::flipper::{FlipperSession, find};
 use crate::ui::{Ui, UiOptions};
 
-use colored::Colorize;
+use colored::Color;
 use std::collections::BTreeSet;
 use std::fs;
 use std::io::Write;
@@ -53,7 +53,7 @@ pub fn run_auto(
     let port = match port_override {
         Some(p) => p.to_string(),
         None => {
-            println!("{}", "→ Searching for Flipper Zero...".cyan());
+            ui.show_status("→ Searching for Flipper Zero...", Color::Cyan);
             find::find_flipper_port().map_err(|e| {
                 format!(
                     "{e}\n  Hint: specify the port manually: --auto --port <PORT>\n  \
@@ -62,14 +62,14 @@ pub fn run_auto(
             })?
         }
     };
-    println!("{} {}", "✓ Flipper port:".green(), port.bold());
+    ui.show_status_value_bold("✓ Flipper port:", &port, Color::Green);
 
-    println!("{}", "→ Opening RPC session...".cyan());
+    ui.show_status("→ Opening RPC session...", Color::Cyan);
     let mut sess =
         FlipperSession::open(&port).map_err(|e| format!("cannot open RPC session: {e}"))?;
-    println!("{}", "✓ RPC session is up (ping OK)".green());
+    ui.show_status("✓ RPC session is up (ping OK)", Color::Green);
 
-    println!("{} {}", "→ Listing".cyan(), NFC_DIR);
+    ui.show_status_detail("→ Listing", NFC_DIR, Color::Cyan, false);
     let entries = sess
         .storage_list(NFC_DIR)
         .map_err(|e| format!("cannot list {NFC_DIR}: {e}"))?;
@@ -81,24 +81,24 @@ pub fn run_auto(
         .collect();
 
     if targets.is_empty() {
-        println!(
-            "{}",
-            "No logs (*.mfkey32.log / *.nested.log) found in /ext/nfc. Nothing to attack.".yellow()
+        ui.show_status(
+            "No logs (*.mfkey32.log / *.nested.log) found in /ext/nfc. Nothing to attack.",
+            Color::Yellow,
         );
         return Ok(());
     }
-    println!(
-        "{} {} file(s): {}",
-        "✓ Found".green(),
-        targets.len(),
-        targets.join(", ")
+    ui.show_status_detail(
+        "✓ Found",
+        &format!("{} file(s): {}", targets.len(), targets.join(", ")),
+        Color::Green,
+        false,
     );
 
     let mut local_logs: Vec<PathBuf> = Vec::new();
     let mut remote_logs: Vec<String> = Vec::new();
     for name in &targets {
         let remote = format!("{NFC_DIR}/{name}");
-        println!("{} {}", "↓ Downloading".cyan(), remote);
+        ui.show_status_detail("↓ Downloading", &remote, Color::Cyan, false);
 
         let data = sess
             .storage_read(&remote)
@@ -106,17 +106,15 @@ pub fn run_auto(
 
         let local = logs_dir.join(name);
         fs::write(&local, &data).map_err(|e| format!("write {local:?}: {e}"))?;
-        println!(
-            "  {} {} ({} bytes)",
-            "saved".dimmed(),
-            local.display(),
-            data.len()
+        ui.show_detail_dimmed(
+            "saved",
+            &format!("{} ({} bytes)", local.display(), data.len()),
         );
         local_logs.push(local);
         remote_logs.push(remote);
     }
 
-    println!("{}", "→ Running attack...".cyan());
+    ui.show_status("→ Running attack...", Color::Cyan);
 
     let mut all_keys: BTreeSet<String> = BTreeSet::new();
     let mut local_dicts: Vec<PathBuf> = Vec::new();
@@ -180,14 +178,14 @@ pub fn run_auto(
         }
     }
 
-    upload::upload_dicts(&mut sess, &local_dicts);
-    upload::merge_and_upload_keys(&mut sess, &all_keys, &logs_dir)?;
+    upload::upload_dicts(&ui, &mut sess, &local_dicts);
+    upload::merge_and_upload_keys(&ui, &mut sess, &all_keys, &logs_dir)?;
 
     if !all_keys.is_empty() {
         let should_delete = ui.confirm("Delete the original log files from the Flipper?", false);
         if should_delete {
             for remote in &remote_logs {
-                println!("{} {}", "✗ Deleting from device".cyan(), remote);
+                ui.show_status_detail("✗ Deleting from device", remote, Color::Cyan, false);
                 if let Err(e) = sess.storage_delete(remote, false) {
                     eprintln!("warning: failed to delete {remote}: {e}");
                 }

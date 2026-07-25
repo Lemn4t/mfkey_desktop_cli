@@ -115,6 +115,43 @@ impl Ui {
         }
     }
 
+    pub fn show_status(&self, text: &str, color: Color) {
+        if self.colored() {
+            println!("{}", text.color(color));
+        } else {
+            println!("{}", text);
+        }
+    }
+
+    pub fn show_status_detail(&self, prefix: &str, detail: &str, color: Color, bold: bool) {
+        if self.colored() {
+            let p = if bold {
+                prefix.color(color).bold()
+            } else {
+                prefix.color(color)
+            };
+            println!("{} {}", p, detail);
+        } else {
+            println!("{} {}", prefix, detail);
+        }
+    }
+
+    pub fn show_status_value_bold(&self, prefix: &str, value: &str, color: Color) {
+        if self.colored() {
+            println!("{} {}", prefix.color(color), value.bold());
+        } else {
+            println!("{} {}", prefix, value);
+        }
+    }
+
+    pub fn show_detail_dimmed(&self, prefix: &str, detail: &str) {
+        if self.colored() {
+            println!("  {} {}", prefix.dimmed(), detail);
+        } else {
+            println!("  {} {}", prefix, detail);
+        }
+    }
+
     pub fn show_nonce_loaded(&self, index: usize, uid: u32, attack_type: &str) {
         if self.opts.plain_ui {
             println!(
