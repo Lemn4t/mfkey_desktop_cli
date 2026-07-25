@@ -5,6 +5,8 @@
 ### Added
 
 - Add one-time startup disclaimer
+- Add HardNested detection stub
+- Delete auto-mode logs only after a successful attack, with confirmation
 
 ### Updated
 
