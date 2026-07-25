@@ -8,6 +8,8 @@
 
 ### Updated
 
+- Combine no_ui and use_colors flags into plain_ui
+
 ### Fixed
 
 - Remove /GL flag from MSVC build
