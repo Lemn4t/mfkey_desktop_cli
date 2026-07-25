@@ -30,15 +30,13 @@ pub mod pb {
     include!(concat!(env!("OUT_DIR"), "/pb.rs"));
 }
 
+use crate::core::attack_runner::{self, FileAttackOutcome};
 use crate::core::disclaimer::resolve_disclaimer_acceptance;
-use crate::core::engine;
 use crate::core::model::MfClassicKey;
-use crate::core::state::AttackState;
 use crate::params::{Params, RunParams};
 use crate::ui::{Ui, UiOptions};
 use std::fs::File;
 use std::io::Write;
-use std::path::Path;
 use std::process;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -52,25 +50,6 @@ fn save_keys_to_file(path: &str, keys: &[MfClassicKey]) -> std::io::Result<()> {
         writeln!(file, "{}", k.to_hex())?;
     }
     Ok(())
-}
-
-fn save_candidate_dict(uid: u32, keys: &[(u8, MfClassicKey)], output_dir: Option<&str>) -> String {
-    let filename = format!("mf_classic_dict_{:08x}.nfc", uid);
-    let path = match output_dir {
-        Some(dir) => Path::new(dir).join(&filename),
-        None => Path::new(&filename).to_path_buf(),
-    };
-    let path_str = path.to_string_lossy().to_string();
-
-    if let Ok(mut file) = File::create(&path) {
-        for (key_idx, k) in keys {
-            let _ = writeln!(file, "{:02X}{}", key_idx, k.to_hex());
-        }
-    } else {
-        eprintln!("Failed to create dictionary file: {}", path_str);
-    }
-
-    path_str
 }
 
 fn main() {
@@ -119,56 +98,40 @@ fn run(args: RunParams) {
         args.dict_output_dir.as_deref(),
     );
 
-    ui.show_loading(&args.input_file);
-
-    let ui_for_load = Arc::clone(&ui);
-    let (nonces, hardnested_detected) =
-        match core::parser::load_nested_nonces(&args.input_file, |idx, uid, name| {
-            ui_for_load.show_nonce_loaded(idx, uid, name);
-        }) {
-            Ok(n) => n,
-            Err(e) => {
-                eprintln!("Failed to open file: {} ({})", args.input_file, e);
-                process::exit(1);
-            }
-        };
-
-    if nonces.is_empty() {
-        if hardnested_detected {
-            ui.show_hardnested_unsupported(None, false);
-        } else {
-            eprintln!("Failed to load nonces from file!");
+    let outcome = match attack_runner::run_file_attack(
+        &ui,
+        &stop,
+        &args.input_file,
+        args.dict_output_dir.as_deref(),
+        None,
+        false,
+    ) {
+        Ok(o) => o,
+        Err(e) => {
+            eprintln!("Failed to open file: {} ({})", args.input_file, e);
+            process::exit(1);
         }
-        process::exit(1);
-    }
-
-    ui.show_loading_complete(nonces.len());
-
-    if hardnested_detected {
-        ui.show_hardnested_note(None);
-    }
-
-    ui.show_start();
-
-    let mut attack_state = AttackState::new(Arc::clone(&ui), Arc::clone(&stop), nonces.len());
-
-    let mut save_dict = |uid: u32, keys: &[(u8, MfClassicKey)], dir: Option<&str>| -> String {
-        save_candidate_dict(uid, keys, dir)
     };
 
-    let (candidate_total_count, dict_outputs) = engine::run_attack(
-        &mut attack_state,
-        &nonces,
-        args.dict_output_dir.as_deref(),
-        &mut save_dict,
-    );
+    let result = match outcome {
+        FileAttackOutcome::NoUsableNonces {
+            hardnested_detected,
+        } => {
+            if !hardnested_detected {
+                eprintln!("Failed to load nonces from file!");
+            }
+            process::exit(1);
+        }
+        FileAttackOutcome::Ran(r) => r,
+    };
 
-    let found_count = attack_state.found_keys.len();
-    ui.show_summary(nonces.len(), found_count, candidate_total_count);
+    let found_count = result.found_keys.len();
+    let candidate_total_count = result.candidate_total_count;
+    let dict_outputs = result.dict_outputs;
 
     if found_count > 0 {
-        ui.show_found_keys_list(&attack_state.found_keys);
-        if let Err(e) = save_keys_to_file(&args.output_file, &attack_state.found_keys) {
+        ui.show_found_keys_list(&result.found_keys);
+        if let Err(e) = save_keys_to_file(&args.output_file, &result.found_keys) {
             eprintln!("Failed to create output file: {} ({})", args.output_file, e);
         }
     }

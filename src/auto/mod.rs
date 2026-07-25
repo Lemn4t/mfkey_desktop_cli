@@ -1,17 +1,13 @@
 mod upload;
 
+use crate::core::attack_runner::{self, FileAttackOutcome};
 use crate::core::disclaimer::resolve_disclaimer_acceptance;
-use crate::core::engine;
-use crate::core::model::MfClassicKey;
-use crate::core::parser;
-use crate::core::state::AttackState;
 use crate::flipper::{FlipperSession, find};
 use crate::ui::{Ui, UiOptions};
 
 use colored::Color;
 use std::collections::BTreeSet;
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -125,56 +121,40 @@ pub fn run_auto(
         }
 
         let log_str = log.to_string_lossy().to_string();
-        ui.show_loading(&log_str);
-
-        let ui_for_load = Arc::clone(&ui);
-        let (nonces, hardnested_detected) =
-            match parser::load_nested_nonces(&log_str, |idx, uid, name| {
-                ui_for_load.show_nonce_loaded(idx, uid, name);
-            }) {
-                Ok(n) => n,
-                Err(e) => {
-                    eprintln!("Failed to parse {log_str}: {e}");
-                    continue;
-                }
-            };
-
-        if nonces.is_empty() {
-            if hardnested_detected {
-                ui.show_hardnested_unsupported(Some(&log_str), true);
-            } else {
-                eprintln!("No nonces loaded from {log_str}, skipping.");
-            }
-            continue;
-        }
-
-        ui.show_loading_complete(nonces.len());
-
-        if hardnested_detected {
-            ui.show_hardnested_note(Some(&log_str));
-        }
-
-        ui.show_start();
-
-        let mut attack_state = AttackState::new(Arc::clone(&ui), Arc::clone(&stop), nonces.len());
-
         let dict_dir = logs_dir.to_string_lossy().to_string();
-        let mut save_dict = |uid: u32, keys: &[(u8, MfClassicKey)], dir: Option<&str>| -> String {
-            save_candidate_dict(uid, keys, dir, &mut local_dicts)
+
+        let outcome = match attack_runner::run_file_attack(
+            &ui,
+            &stop,
+            &log_str,
+            Some(dict_dir.as_str()),
+            Some(&log_str),
+            true,
+        ) {
+            Ok(o) => o,
+            Err(e) => {
+                eprintln!("Failed to parse {log_str}: {e}");
+                continue;
+            }
         };
 
-        let (candidate_total_count, _dict_outputs) = engine::run_attack(
-            &mut attack_state,
-            &nonces,
-            Some(dict_dir.as_str()),
-            &mut save_dict,
-        );
+        let result = match outcome {
+            FileAttackOutcome::NoUsableNonces {
+                hardnested_detected,
+            } => {
+                if !hardnested_detected {
+                    eprintln!("No nonces loaded from {log_str}, skipping.");
+                }
+                continue;
+            }
+            FileAttackOutcome::Ran(r) => r,
+        };
 
-        let found = attack_state.found_keys.len();
-        ui.show_summary(nonces.len(), found, candidate_total_count);
-
-        for k in &attack_state.found_keys {
+        for k in &result.found_keys {
             all_keys.insert(k.to_hex().to_uppercase());
+        }
+        for d in &result.dict_outputs {
+            local_dicts.push(PathBuf::from(&d.path));
         }
     }
 
@@ -194,29 +174,4 @@ pub fn run_auto(
     }
 
     Ok(())
-}
-
-fn save_candidate_dict(
-    uid: u32,
-    keys: &[(u8, MfClassicKey)],
-    output_dir: Option<&str>,
-    sink: &mut Vec<PathBuf>,
-) -> String {
-    let filename = format!("mf_classic_dict_{:08x}.nfc", uid);
-    let path = match output_dir {
-        Some(dir) => Path::new(dir).join(&filename),
-        None => Path::new(&filename).to_path_buf(),
-    };
-    let path_str = path.to_string_lossy().to_string();
-
-    if let Ok(mut file) = fs::File::create(&path) {
-        for (key_idx, k) in keys {
-            let _ = writeln!(file, "{:02X}{}", key_idx, k.to_hex());
-        }
-        sink.push(path.clone());
-    } else {
-        eprintln!("Failed to create dictionary file: {}", path_str);
-    }
-
-    path_str
 }
