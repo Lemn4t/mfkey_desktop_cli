@@ -25,7 +25,7 @@ pub fn resolve_disclaimer_acceptance(ui: &Ui, force_accept: bool) -> bool {
     }
 
     ui.show_disclaimer(DISCLAIMER_TEXT);
-    let accepted = ui.confirm("Do you accept the terms of use?", false);
+    let accepted = ui.confirm("Do you accept the terms of use?", true);
 
     if accepted && let Err(e) = config.accept_disclaimer_and_store() {
         ui.show_error(&format!("{e}"));
