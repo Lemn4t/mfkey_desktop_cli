@@ -217,6 +217,22 @@ impl Ui {
         }
     }
 
+    pub fn show_error(&self, text: &str) {
+        if self.colored() {
+            eprintln!("{}", text.red());
+        } else {
+            eprintln!("{}", text);
+        }
+    }
+
+    pub fn show_interrupt(&self) {
+        eprintln!("\n\nReceived interrupt signal. Stopping gracefully...");
+    }
+
+    pub fn show_detail(&self, text: &str) {
+        println!("  {}", text);
+    }
+
     pub fn show_start(&self) {
         if self.opts.plain_ui {
             println!("Starting key recovery... (Press Ctrl+C to stop gracefully.)\n");
@@ -443,6 +459,27 @@ impl Ui {
         println!("  • The nonces are invalid or corrupted");
         println!("  • The keyspace being searched doesn't contain the key");
         println!("  • The attack was interrupted before completion\n");
+    }
+
+    pub fn show_disclaimer(&self, text: &str) {
+        if self.colored() {
+            println!("{}", text.yellow());
+        } else {
+            println!("{}", text);
+        }
+    }
+
+    pub fn show_pill_taken(&self, accepted: bool) {
+        let text = if accepted {
+            "✓ Red pill taken"
+        } else {
+            "✓ Blue pill taken"
+        };
+        if self.colored() {
+            println!("{}", text.green());
+        } else {
+            println!("{}", text);
+        }
     }
 
     pub fn confirm(&self, prompt: &str, default_yes: bool) -> bool {

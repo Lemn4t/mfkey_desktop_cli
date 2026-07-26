@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.6] - 2026-07-18
+## [1.0.6] - 2026-07-26
 
 ### Added
 
@@ -11,11 +11,16 @@
 ### Updated
 
 - Combine no_ui and use_colors flags into plain_ui
+- Group StaticEncrypted nonces by UID in one pass instead of O(n²)
 
 ### Fixed
 
 - Remove /GL flag from MSVC build
 - Route all --auto/--plain output through Ui instead of raw colored calls
+- Strip Windows verbatim path prefix (\\?\) from displayed paths
+- Don't record a dict path when the write actually failed
+- Route all remaining console output through the Ui layer instead of raw println!/eprintln! calls, including a --plain color leak in the "AUTO failed" message
+- Rewrite the disclaimer flow to use Ui instead of its own duplicated color/prompt logic, fixing a nested-ANSI-color rendering bug in the "pill taken" message
 
 ## [1.0.5] - 2026-07-18
 

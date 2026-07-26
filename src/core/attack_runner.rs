@@ -55,7 +55,7 @@ pub fn run_file_attack(
     let mut save_dict = |uid: u32,
                          keys: &[(u8, MfClassicKey)],
                          dir: Option<&str>|
-     -> Option<String> { save_candidate_dict(uid, keys, dir) };
+     -> Option<String> { save_candidate_dict(ui, uid, keys, dir) };
 
     let (candidate_total_count, dict_outputs) =
         engine::run_attack(&mut attack_state, &nonces, dict_output_dir, &mut save_dict);
@@ -72,6 +72,7 @@ pub fn run_file_attack(
 }
 
 fn save_candidate_dict(
+    ui: &Ui,
     uid: u32,
     keys: &[(u8, MfClassicKey)],
     output_dir: Option<&str>,
@@ -91,7 +92,7 @@ fn save_candidate_dict(
             Some(path_str)
         }
         Err(_) => {
-            eprintln!("Failed to create dictionary file: {}", path_str);
+            ui.show_error(&format!("Failed to create dictionary file: {}", path_str));
             None
         }
     }

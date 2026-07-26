@@ -27,14 +27,15 @@ pub fn run_auto(
 ) -> Result<(), String> {
     let ui_opts = UiOptions { plain_ui };
     let ui = Arc::new(Ui::new(ui_opts));
-    if !resolve_disclaimer_acceptance(&ui_opts, auto_accept_disclaimer) {
+    if !resolve_disclaimer_acceptance(&ui, auto_accept_disclaimer) {
         return Ok(());
     }
     let stop = Arc::new(AtomicBool::new(false));
     {
         let stop_clone = Arc::clone(&stop);
+        let ui_for_ctrlc = Arc::clone(&ui);
         let _ = ctrlc::set_handler(move || {
-            eprintln!("\n\nReceived interrupt signal. Stopping gracefully...");
+            ui_for_ctrlc.show_interrupt();
             stop_clone.store(true, Ordering::SeqCst);
         });
     }
@@ -133,7 +134,7 @@ pub fn run_auto(
         ) {
             Ok(o) => o,
             Err(e) => {
-                eprintln!("Failed to parse {log_str}: {e}");
+                ui.show_error(&format!("Failed to parse {log_str}: {e}"));
                 continue;
             }
         };
@@ -143,7 +144,7 @@ pub fn run_auto(
                 hardnested_detected,
             } => {
                 if !hardnested_detected {
-                    eprintln!("No nonces loaded from {log_str}, skipping.");
+                    ui.show_error(&format!("No nonces loaded from {log_str}, skipping."));
                 }
                 continue;
             }
@@ -167,7 +168,7 @@ pub fn run_auto(
             for remote in &remote_logs {
                 ui.show_status_detail("✗ Deleting from device", remote, Color::Cyan, false);
                 if let Err(e) = sess.storage_delete(remote, false) {
-                    eprintln!("warning: failed to delete {remote}: {e}");
+                    ui.show_error(&format!("warning: failed to delete {remote}: {e}"));
                 }
             }
         }

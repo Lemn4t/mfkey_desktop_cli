@@ -66,15 +66,17 @@ fn display_path(p: &std::path::Path) -> String {
 fn main() {
     match params::parse() {
         Params::Auto(auto_params) => {
+            let plain_ui = auto_params.plain_ui;
             match auto::run_auto(
                 auto_params.port.as_deref(),
                 auto_params.out_dir.as_deref(),
-                auto_params.plain_ui,
+                plain_ui,
                 auto_params.accept_disclaimer,
             ) {
                 Ok(()) => process::exit(0),
                 Err(e) => {
-                    eprintln!("\x1b[31mAUTO failed:\x1b[0m {e}");
+                    let ui = Ui::new(UiOptions { plain_ui });
+                    ui.show_error(&format!("AUTO failed: {e}"));
                     process::exit(1);
                 }
             }
@@ -88,17 +90,18 @@ fn run(args: RunParams) {
         plain_ui: args.plain_ui,
     };
     let ui = Arc::new(Ui::new(ui_opts));
-    if !resolve_disclaimer_acceptance(&ui_opts, args.accept_disclaimer) {
+    if !resolve_disclaimer_acceptance(&ui, args.accept_disclaimer) {
         return;
     }
     let stop = Arc::new(AtomicBool::new(false));
     {
         let stop_clone = Arc::clone(&stop);
+        let ui_for_ctrlc = Arc::clone(&ui);
         if let Err(e) = ctrlc::set_handler(move || {
-            eprintln!("\n\nReceived interrupt signal. Stopping attack gracefully...");
+            ui_for_ctrlc.show_interrupt();
             stop_clone.store(true, Ordering::SeqCst);
         }) {
-            eprintln!("Warning: failed to set Ctrl+C handler: {}", e);
+            ui.show_error(&format!("Warning: failed to set Ctrl+C handler: {e}"));
         }
     }
 
@@ -119,7 +122,7 @@ fn run(args: RunParams) {
     ) {
         Ok(o) => o,
         Err(e) => {
-            eprintln!("Failed to open file: {} ({})", args.input_file, e);
+            ui.show_error(&format!("Failed to open file: {} ({})", args.input_file, e));
             process::exit(1);
         }
     };
@@ -129,7 +132,7 @@ fn run(args: RunParams) {
             hardnested_detected,
         } => {
             if !hardnested_detected {
-                eprintln!("Failed to load nonces from file!");
+                ui.show_error("Failed to load nonces from file!");
             }
             process::exit(1);
         }
@@ -143,7 +146,10 @@ fn run(args: RunParams) {
     if found_count > 0 {
         ui.show_found_keys_list(&result.found_keys);
         if let Err(e) = save_keys_to_file(&args.output_file, &result.found_keys) {
-            eprintln!("Failed to create output file: {} ({})", args.output_file, e);
+            ui.show_error(&format!(
+                "Failed to create output file: {} ({})",
+                args.output_file, e
+            ));
         }
     }
 
@@ -173,11 +179,15 @@ fn run(args: RunParams) {
             if let Some(kf) = keys_file
                 && let Ok(abs) = std::fs::canonicalize(kf)
             {
-                println!("  keys: {}", display_path(&abs));
+                ui.show_detail(&format!("keys: {}", display_path(&abs)));
             }
             for d in &dict_outputs {
                 if let Ok(abs) = std::fs::canonicalize(&d.path) {
-                    println!("  dict (uid 0x{:08X}): {}", d.uid, display_path(&abs));
+                    ui.show_detail(&format!(
+                        "dict (uid 0x{:08X}): {}",
+                        d.uid,
+                        display_path(&abs)
+                    ));
                 }
             }
         }

@@ -29,7 +29,9 @@ pub fn upload_dicts(ui: &Ui, sess: &mut FlipperSession, local_dicts: &[PathBuf])
         let file_name = match dict_path.file_name().and_then(|n| n.to_str()) {
             Some(n) => n.to_string(),
             None => {
-                eprintln!("warning: skipping dict with invalid name: {dict_path:?}");
+                ui.show_error(&format!(
+                    "warning: skipping dict with invalid name: {dict_path:?}"
+                ));
                 continue;
             }
         };
@@ -37,7 +39,9 @@ pub fn upload_dicts(ui: &Ui, sess: &mut FlipperSession, local_dicts: &[PathBuf])
         let data = match fs::read(dict_path) {
             Ok(d) => d,
             Err(e) => {
-                eprintln!("warning: cannot read local dict {dict_path:?}: {e}");
+                ui.show_error(&format!(
+                    "warning: cannot read local dict {dict_path:?}: {e}"
+                ));
                 continue;
             }
         };
@@ -48,7 +52,7 @@ pub fn upload_dicts(ui: &Ui, sess: &mut FlipperSession, local_dicts: &[PathBuf])
 
         match sess.storage_write(&remote_dict, &data) {
             Ok(_) => ui.show_detail_dimmed("uploaded:", &remote_dict),
-            Err(e) => eprintln!("warning: upload {remote_dict} failed: {e}"),
+            Err(e) => ui.show_error(&format!("warning: upload {remote_dict} failed: {e}")),
         }
     }
 }
@@ -126,7 +130,7 @@ pub fn merge_and_upload_keys(
             "✓ Nothing new to upload (all keys already present).",
             Color::Green,
         );
-        println!("  local copies: {}", logs_dir.display());
+        ui.show_detail(&format!("local copies: {}", logs_dir.display()));
         return Ok(());
     }
 
@@ -135,7 +139,9 @@ pub fn merge_and_upload_keys(
     let upload = body.into_bytes();
 
     if let Err(e) = fs::write(&result_path, &upload) {
-        eprintln!("warning: cannot write local copy {result_path:?}: {e}");
+        ui.show_error(&format!(
+            "warning: cannot write local copy {result_path:?}: {e}"
+        ));
     } else {
         ui.show_detail_dimmed("keys saved locally:", &result_path.display().to_string());
     }
@@ -151,7 +157,7 @@ pub fn merge_and_upload_keys(
         .map_err(|e| format!("upload {remote_out}: {e}"))?;
 
     ui.show_status_detail("✓ Done. Keys uploaded to", &remote_out, Color::Green, true);
-    println!("  local copies: {}", logs_dir.display());
+    ui.show_detail(&format!("local copies: {}", logs_dir.display()));
 
     Ok(())
 }
