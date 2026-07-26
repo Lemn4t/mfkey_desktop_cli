@@ -1,3 +1,4 @@
+use crate::ext::result::{ResultExt, Rslt};
 use crate::flipper::FlipperSession;
 use crate::ui::Ui;
 use colored::Color;
@@ -62,7 +63,7 @@ pub fn merge_and_upload_keys(
     sess: &mut FlipperSession,
     all_keys: &BTreeSet<String>,
     logs_dir: &Path,
-) -> Result<(), String> {
+) -> Rslt<()> {
     if all_keys.is_empty() {
         ui.show_status("Attack found no keys.", Color::Yellow);
         return Ok(());
@@ -77,9 +78,9 @@ pub fn merge_and_upload_keys(
     let result_path = logs_dir.join(RESULT_REMOTE_NAME);
     {
         let mut f =
-            fs::File::create(&result_path).map_err(|e| format!("create {result_path:?}: {e}"))?;
+            fs::File::create(&result_path).with_context(|| format!("create {result_path:?}"))?;
         for k in all_keys {
-            writeln!(f, "{k}").map_err(|e| format!("write keys: {e}"))?;
+            writeln!(f, "{k}").context("write keys")?;
         }
     }
     ui.show_detail_dimmed("keys saved:", &result_path.display().to_string());
@@ -154,7 +155,7 @@ pub fn merge_and_upload_keys(
         false,
     );
     sess.storage_write(&remote_out, &upload)
-        .map_err(|e| format!("upload {remote_out}: {e}"))?;
+        .with_context(|| format!("upload {remote_out}"))?;
 
     ui.show_status_detail("✓ Done. Keys uploaded to", &remote_out, Color::Green, true);
     ui.show_detail(&format!("local copies: {}", logs_dir.display()));

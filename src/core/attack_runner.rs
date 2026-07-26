@@ -2,6 +2,7 @@ use crate::core::engine::{self, DictOutput};
 use crate::core::model::MfClassicKey;
 use crate::core::parser;
 use crate::core::state::AttackState;
+use crate::ext::result::Rslt;
 use crate::ui::Ui;
 use std::fs;
 use std::io::Write;
@@ -27,7 +28,7 @@ pub fn run_file_attack(
     dict_output_dir: Option<&str>,
     hardnested_context: Option<&str>,
     hardnested_skipping: bool,
-) -> std::io::Result<FileAttackOutcome> {
+) -> Rslt<FileAttackOutcome> {
     ui.show_loading(file_path);
 
     let ui_for_load = Arc::clone(ui);

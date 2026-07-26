@@ -2,37 +2,16 @@ mod auto;
 mod core;
 pub mod ext;
 mod flipper;
+mod generated_pb;
 mod params;
 mod ui;
 
-pub mod pb_app {
-    include!(concat!(env!("OUT_DIR"), "/pb_app.rs"));
-}
-pub mod pb_desktop {
-    include!(concat!(env!("OUT_DIR"), "/pb_desktop.rs"));
-}
-pub mod pb_gpio {
-    include!(concat!(env!("OUT_DIR"), "/pb_gpio.rs"));
-}
-pub mod pb_gui {
-    include!(concat!(env!("OUT_DIR"), "/pb_gui.rs"));
-}
-pub mod pb_property {
-    include!(concat!(env!("OUT_DIR"), "/pb_property.rs"));
-}
-pub mod pb_storage {
-    include!(concat!(env!("OUT_DIR"), "/pb_storage.rs"));
-}
-pub mod pb_system {
-    include!(concat!(env!("OUT_DIR"), "/pb_system.rs"));
-}
-pub mod pb {
-    include!(concat!(env!("OUT_DIR"), "/pb.rs"));
-}
+pub use generated_pb::*;
 
 use crate::core::attack_runner::{self, FileAttackOutcome};
 use crate::core::disclaimer::resolve_disclaimer_acceptance;
 use crate::core::model::MfClassicKey;
+use crate::ext::result::Rslt;
 use crate::params::{Params, RunParams};
 use crate::ui::{Ui, UiOptions};
 use std::fs::File;
@@ -41,7 +20,7 @@ use std::process;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-fn save_keys_to_file(path: &str, keys: &[MfClassicKey]) -> std::io::Result<()> {
+fn save_keys_to_file(path: &str, keys: &[MfClassicKey]) -> Rslt<()> {
     if keys.is_empty() {
         return Ok(());
     }

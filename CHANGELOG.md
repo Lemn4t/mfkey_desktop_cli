@@ -7,11 +7,14 @@
 - Add one-time startup disclaimer
 - Add HardNested detection stub
 - Delete auto-mode logs only after a successful attack, with confirmation
+- Add unit tests for core::parser (line classification, mfkey32/static_nested/static_encrypted/HardNested, load_nested_nonces)
 
 ### Updated
 
 - Combine no_ui and use_colors flags into plain_ui
 - Group StaticEncrypted nonces by UID in one pass instead of O(n²)
+- Move generated protobuf module declarations out of main.rs into src/generated_pb.rs
+- Unify error handling around a shared Rslt<T> (Box<dyn Error>) with context, instead of ad hoc Strings and a typed error that got stringified at the auto/ boundary
 
 ### Fixed
 

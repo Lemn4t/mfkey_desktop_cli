@@ -2,6 +2,7 @@ mod upload;
 
 use crate::core::attack_runner::{self, FileAttackOutcome};
 use crate::core::disclaimer::resolve_disclaimer_acceptance;
+use crate::ext::result::{ResultExt, Rslt};
 use crate::flipper::{FlipperSession, find};
 use crate::ui::{Ui, UiOptions};
 
@@ -24,7 +25,7 @@ pub fn run_auto(
     out_dir: Option<&Path>,
     plain_ui: bool,
     auto_accept_disclaimer: bool,
-) -> Result<(), String> {
+) -> Rslt<()> {
     let ui_opts = UiOptions { plain_ui };
     let ui = Arc::new(Ui::new(ui_opts));
     if !resolve_disclaimer_acceptance(&ui, auto_accept_disclaimer) {
@@ -42,10 +43,10 @@ pub fn run_auto(
 
     let base: PathBuf = match out_dir {
         Some(p) => p.to_path_buf(),
-        None => std::env::current_dir().map_err(|e| format!("cwd error: {e}"))?,
+        None => std::env::current_dir().context("cwd error")?,
     };
     let logs_dir = base.join("mfkey_auto_data");
-    fs::create_dir_all(&logs_dir).map_err(|e| format!("cannot create {logs_dir:?}: {e}"))?;
+    fs::create_dir_all(&logs_dir).with_context(|| format!("cannot create {logs_dir:?}"))?;
 
     let port = match port_override {
         Some(p) => p.to_string(),
@@ -62,14 +63,13 @@ pub fn run_auto(
     ui.show_status_value_bold("✓ Flipper port:", &port, Color::Green);
 
     ui.show_status("→ Opening RPC session...", Color::Cyan);
-    let mut sess =
-        FlipperSession::open(&port).map_err(|e| format!("cannot open RPC session: {e}"))?;
+    let mut sess = FlipperSession::open(&port).context("cannot open RPC session")?;
     ui.show_status("✓ RPC session is up (ping OK)", Color::Green);
 
     ui.show_status_detail("→ Listing", NFC_DIR, Color::Cyan, false);
     let entries = sess
         .storage_list(NFC_DIR)
-        .map_err(|e| format!("cannot list {NFC_DIR}: {e}"))?;
+        .with_context(|| format!("cannot list {NFC_DIR}"))?;
 
     let targets: Vec<String> = entries
         .into_iter()
@@ -99,10 +99,10 @@ pub fn run_auto(
 
         let data = sess
             .storage_read(&remote)
-            .map_err(|e| format!("read {remote}: {e}"))?;
+            .with_context(|| format!("read {remote}"))?;
 
         let local = logs_dir.join(name);
-        fs::write(&local, &data).map_err(|e| format!("write {local:?}: {e}"))?;
+        fs::write(&local, &data).with_context(|| format!("write {local:?}"))?;
         ui.show_detail_dimmed(
             "saved",
             &format!("{} ({} bytes)", local.display(), data.len()),
