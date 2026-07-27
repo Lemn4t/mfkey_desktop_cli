@@ -1,15 +1,15 @@
 mod upload;
 
 use crate::core::attack_runner::{self, FileAttackOutcome};
-use crate::core::disclaimer::resolve_disclaimer_acceptance;
 use crate::ext::result::{ResultExt, Rslt};
 use crate::flipper::{FlipperSession, find};
-use crate::ui::{Ui, UiOptions};
+use crate::ui::Ui;
 
+use crate::params::AutoParams;
 use colored::Color;
 use std::collections::BTreeSet;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -20,35 +20,15 @@ fn is_target_log(name: &str) -> bool {
     lower.ends_with(".mfkey32.log") || lower.ends_with(".nested.log")
 }
 
-pub fn run_auto(
-    port_override: Option<&str>,
-    out_dir: Option<&Path>,
-    plain_ui: bool,
-    auto_accept_disclaimer: bool,
-) -> Rslt<()> {
-    let ui_opts = UiOptions { plain_ui };
-    let ui = Arc::new(Ui::new(ui_opts));
-    if !resolve_disclaimer_acceptance(&ui, auto_accept_disclaimer) {
-        return Ok(());
-    }
-    let stop = Arc::new(AtomicBool::new(false));
-    {
-        let stop_clone = Arc::clone(&stop);
-        let ui_for_ctrlc = Arc::clone(&ui);
-        let _ = ctrlc::set_handler(move || {
-            ui_for_ctrlc.show_interrupt();
-            stop_clone.store(true, Ordering::SeqCst);
-        });
-    }
-
-    let base: PathBuf = match out_dir {
+pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<()> {
+    let base: PathBuf = match params.out_dir.as_deref() {
         Some(p) => p.to_path_buf(),
         None => std::env::current_dir().context("cwd error")?,
     };
     let logs_dir = base.join("mfkey_auto_data");
     fs::create_dir_all(&logs_dir).with_context(|| format!("cannot create {logs_dir:?}"))?;
 
-    let port = match port_override {
+    let port = match params.port.as_deref() {
         Some(p) => p.to_string(),
         None => {
             ui.show_status("→ Searching for Flipper Zero...", Color::Cyan);

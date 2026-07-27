@@ -43,65 +43,61 @@ fn display_path(p: &std::path::Path) -> String {
 }
 
 fn main() {
-    match params::parse() {
-        Params::Auto(auto_params) => {
-            let plain_ui = auto_params.plain_ui;
-            match auto::run_auto(
-                auto_params.port.as_deref(),
-                auto_params.out_dir.as_deref(),
-                plain_ui,
-                auto_params.accept_disclaimer,
-            ) {
-                Ok(()) => process::exit(0),
-                Err(e) => {
-                    let ui = Ui::new(UiOptions { plain_ui });
-                    ui.show_error(&format!("AUTO failed: {e}"));
-                    process::exit(1);
-                }
-            }
-        }
-        Params::Run(args) => run(args),
-    }
-}
-
-fn run(args: RunParams) {
-    let ui_opts = UiOptions {
-        plain_ui: args.plain_ui,
+    let params = params::parse();
+    let opts = UiOptions {
+        plain_ui: params.plain_ui(),
     };
-    let ui = Arc::new(Ui::new(ui_opts));
-    if !resolve_disclaimer_acceptance(&ui, args.accept_disclaimer) {
+    let ui = Ui::new(opts);
+    if !resolve_disclaimer_acceptance(&ui, params.accept_disclaimer()) {
         return;
     }
+    let ui = Arc::new(ui);
     let stop = Arc::new(AtomicBool::new(false));
+    let stop_clone = stop.clone();
+    let handler_ui = ui.clone();
     {
-        let stop_clone = Arc::clone(&stop);
-        let ui_for_ctrlc = Arc::clone(&ui);
         if let Err(e) = ctrlc::set_handler(move || {
-            ui_for_ctrlc.show_interrupt();
+            handler_ui.show_interrupt();
             stop_clone.store(true, Ordering::SeqCst);
         }) {
             ui.show_error(&format!("Warning: failed to set Ctrl+C handler: {e}"));
         }
     }
-
     ui.show_title();
+
+    match params {
+        Params::Auto(params) => match auto::run_auto(ui.clone(), params, stop) {
+            Ok(()) => process::exit(0),
+            Err(e) => {
+                ui.show_error(&format!("AUTO failed: {e}"));
+                process::exit(1);
+            }
+        },
+        Params::Run(params) => run(ui, params, stop),
+    }
+}
+
+fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) {
     ui.show_config(
-        &args.input_file,
-        &args.output_file,
-        args.dict_output_dir.as_deref(),
+        &params.input_file,
+        &params.output_file,
+        params.dict_output_dir.as_deref(),
     );
 
     let outcome = match attack_runner::run_file_attack(
         &ui,
         &stop,
-        &args.input_file,
-        args.dict_output_dir.as_deref(),
+        &params.input_file,
+        params.dict_output_dir.as_deref(),
         None,
         false,
     ) {
         Ok(o) => o,
         Err(e) => {
-            ui.show_error(&format!("Failed to open file: {} ({})", args.input_file, e));
+            ui.show_error(&format!(
+                "Failed to open file: {} ({})",
+                params.input_file, e
+            ));
             process::exit(1);
         }
     };
@@ -124,16 +120,16 @@ fn run(args: RunParams) {
 
     if found_count > 0 {
         ui.show_found_keys_list(&result.found_keys);
-        if let Err(e) = save_keys_to_file(&args.output_file, &result.found_keys) {
+        if let Err(e) = save_keys_to_file(&params.output_file, &result.found_keys) {
             ui.show_error(&format!(
                 "Failed to create output file: {} ({})",
-                args.output_file, e
+                params.output_file, e
             ));
         }
     }
 
     let keys_file = if found_count > 0 {
-        Some(args.output_file.as_str())
+        Some(params.output_file.as_str())
     } else {
         None
     };
@@ -151,7 +147,7 @@ fn run(args: RunParams) {
         ui.show_no_keys_found();
     }
 
-    if !args.plain_ui && (found_count > 0 || candidate_total_count > 0) {
+    if !params.plain_ui && (found_count > 0 || candidate_total_count > 0) {
         let confirmed = ui.confirm("Should I show the full path to the saved files?", false);
 
         if confirmed {
