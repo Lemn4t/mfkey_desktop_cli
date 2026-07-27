@@ -47,3 +47,19 @@ pub fn parse() -> Params {
         accept_disclaimer: cli.accept_disclaimer,
     })
 }
+
+impl Params {
+    pub fn plain_ui(&self) -> bool {
+        match self {
+            Params::Run(p) => p.plain_ui,
+            Params::Auto(p) => p.plain_ui,
+        }
+    }
+
+    pub fn accept_disclaimer(&self) -> bool {
+        match self {
+            Params::Run(p) => p.accept_disclaimer,
+            Params::Auto(p) => p.accept_disclaimer,
+        }
+    }
+}
