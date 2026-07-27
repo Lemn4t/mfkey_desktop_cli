@@ -1,10 +1,15 @@
 #include "crypto1.h"
-#include <stdlib.h>
 #include <string.h>
 
 #include "parity.h"
 
 #define MSB_LIMIT_BASE 16
+
+#if defined(_MSC_VER)
+#define MFKEY_THREAD_LOCAL __declspec(thread)
+#else
+#define MFKEY_THREAD_LOCAL __thread
+#endif
 
 struct Crypto1State {
   uint32_t odd, even;
@@ -14,6 +19,14 @@ struct Msb {
   int tail;
   uint32_t states[768];
 };
+
+#define MSB_ARRAY_LEN (MSB_LIMIT_BASE * 2)
+
+static MFKEY_THREAD_LOCAL struct Msb tls_odd_msbs[MSB_ARRAY_LEN];
+static MFKEY_THREAD_LOCAL struct Msb tls_even_msbs[MSB_ARRAY_LEN];
+static MFKEY_THREAD_LOCAL unsigned int tls_temp_states_odd[1280];
+static MFKEY_THREAD_LOCAL unsigned int tls_temp_states_even[1280];
+static MFKEY_THREAD_LOCAL unsigned int tls_states_buffer[1024];
 
 typedef struct {
   const CNonce *n;
@@ -393,7 +406,7 @@ static int calculate_msb_tables(int oks, int eks, int msb_round, RecoverCtx *ctx
   memset(even_msbs, 0, MSB_LIMIT * sizeof(struct Msb));
 
   for (semi_state = 1 << 20; semi_state >= 0; semi_state--) {
-    if (ctx->cb->should_stop && ctx->cb->should_stop(ctx->cb->user))
+    if ((semi_state & 0xFFF) == 0 && ctx->cb->should_stop && ctx->cb->should_stop(ctx->cb->user))
       return 0;
 
     if (semi_state % 65536 == 0) {
@@ -488,20 +501,11 @@ bool crypto1_recover(const CNonce *n, uint32_t ks2, uint32_t in, const CCallback
     MSB_LIMIT = MSB_LIMIT_BASE / 2;
   }
 
-  struct Msb *odd_msbs = (struct Msb *)malloc(sizeof(struct Msb) * MSB_LIMIT_BASE * 2);
-  struct Msb *even_msbs = (struct Msb *)malloc(sizeof(struct Msb) * MSB_LIMIT_BASE * 2);
-  unsigned int *temp_states_odd = (unsigned int *)malloc(sizeof(unsigned int) * 1280);
-  unsigned int *temp_states_even = (unsigned int *)malloc(sizeof(unsigned int) * 1280);
-  unsigned int *states_buffer = (unsigned int *)malloc(sizeof(unsigned int) * 1024);
-
-  if (!odd_msbs || !even_msbs || !temp_states_odd || !temp_states_even || !states_buffer) {
-    free(odd_msbs);
-    free(even_msbs);
-    free(temp_states_odd);
-    free(temp_states_even);
-    free(states_buffer);
-    return false;
-  }
+  struct Msb *odd_msbs = tls_odd_msbs;
+  struct Msb *even_msbs = tls_even_msbs;
+  unsigned int *temp_states_odd = tls_temp_states_odd;
+  unsigned int *temp_states_even = tls_temp_states_even;
+  unsigned int *states_buffer = tls_states_buffer;
 
   int oks = 0, eks = 0;
   int i = 0, msb = 0;
@@ -535,12 +539,6 @@ bool crypto1_recover(const CNonce *n, uint32_t ks2, uint32_t in, const CCallback
       cb->progress((uint32_t)ctx.current_msb_round, (uint32_t)ctx.total_msb_rounds, 100.0f, n->uid,
                    cb->user);
   }
-
-  free(odd_msbs);
-  free(even_msbs);
-  free(temp_states_odd);
-  free(temp_states_even);
-  free(states_buffer);
 
   return found;
 }

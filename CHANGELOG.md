@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.6] - 2026-07-26
+## [1.0.6] - 2026-07-27
 
 ### Added
 
@@ -15,6 +15,8 @@
 - Group StaticEncrypted nonces by UID in one pass instead of O(n²)
 - Move generated protobuf module declarations out of main.rs into src/generated_pb.rs
 - Unify error handling around a shared Rslt<T> (Box<dyn Error>) with context, instead of ad hoc Strings and a typed error that got stringified at the auto/ boundary
+- Throttle the should_stop poll in the crypto1 MSB search loop from every iteration to every 4096
+- Replace crypto1_recover's per-nonce malloc/free scratch buffers with reusable thread-local storage
 
 ### Fixed
 
