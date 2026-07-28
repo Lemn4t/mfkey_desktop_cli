@@ -1,5 +1,6 @@
 fn main() {
     let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
     let profile = std::env::var("PROFILE").unwrap_or_default();
     let is_release = profile == "release";
@@ -30,7 +31,9 @@ fn main() {
             build.flag_if_supported("-O3");
             build.flag_if_supported("-funroll-loops");
             build.flag_if_supported("-fomit-frame-pointer");
-            build.flag_if_supported("-fno-plt");
+            if target_os == "linux" {
+                build.flag_if_supported("-fno-plt");
+            }
         }
         if native {
             build.flag_if_supported("-march=native");

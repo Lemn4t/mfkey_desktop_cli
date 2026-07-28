@@ -27,6 +27,7 @@
 - Route all remaining console output through the Ui layer instead of raw println!/eprintln! calls, including a --plain color leak in the "AUTO failed" message
 - Rewrite the disclaimer flow to use Ui instead of its own duplicated color/prompt logic, fixing a nested-ANSI-color rendering bug in the "pill taken" message
 - Show disclaimer and tool's title in main
+- Only pass -fno-plt on Linux, avoiding a harmless but noisy "argument unused" warning on macOS builds
 
 ## [1.0.5] - 2026-07-18
 
