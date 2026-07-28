@@ -19,6 +19,7 @@
 - Replace crypto1_recover's per-nonce malloc/free scratch buffers with reusable thread-local storage
 - Drop the console dependency, replacing its one use (clear_screen) with a plain ANSI escape
 - Stop deriving serde::Serialize/Deserialize on every generated protobuf type; nothing used it outside core::config::Config
+- Introduce a MessageKind enum so status colors are mapped in one place instead of scattered Color:: literals in auto/mod.rs and auto/upload.rs
 
 ### Fixed
 

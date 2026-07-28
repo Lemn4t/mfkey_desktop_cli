@@ -17,6 +17,23 @@ impl Default for UiOptions {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MessageKind {
+    Info,
+    Success,
+    Warning,
+}
+
+impl MessageKind {
+    fn color(self) -> Color {
+        match self {
+            MessageKind::Info => Color::Cyan,
+            MessageKind::Success => Color::Green,
+            MessageKind::Warning => Color::Yellow,
+        }
+    }
+}
+
 struct UiInner {
     bar: Option<ProgressBar>,
     total_nonces: usize,
@@ -114,20 +131,20 @@ impl Ui {
         }
     }
 
-    pub fn show_status(&self, text: &str, color: Color) {
+    pub fn show_status(&self, text: &str, kind: MessageKind) {
         if self.colored() {
-            println!("{}", text.color(color));
+            println!("{}", text.color(kind.color()));
         } else {
             println!("{}", text);
         }
     }
 
-    pub fn show_status_detail(&self, prefix: &str, detail: &str, color: Color, bold: bool) {
+    pub fn show_status_detail(&self, prefix: &str, detail: &str, kind: MessageKind, bold: bool) {
         if self.colored() {
             let p = if bold {
-                prefix.color(color).bold()
+                prefix.color(kind.color()).bold()
             } else {
-                prefix.color(color)
+                prefix.color(kind.color())
             };
             println!("{} {}", p, detail);
         } else {
@@ -135,9 +152,9 @@ impl Ui {
         }
     }
 
-    pub fn show_status_value_bold(&self, prefix: &str, value: &str, color: Color) {
+    pub fn show_status_value_bold(&self, prefix: &str, value: &str, kind: MessageKind) {
         if self.colored() {
-            println!("{} {}", prefix.color(color), value.bold());
+            println!("{} {}", prefix.color(kind.color()), value.bold());
         } else {
             println!("{} {}", prefix, value);
         }

@@ -3,10 +3,9 @@ mod upload;
 use crate::core::attack_runner::{self, FileAttackOutcome};
 use crate::ext::result::{ResultExt, Rslt};
 use crate::flipper::{FlipperSession, find};
-use crate::ui::Ui;
+use crate::ui::{MessageKind, Ui};
 
 use crate::params::AutoParams;
-use colored::Color;
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::PathBuf;
@@ -31,7 +30,7 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
     let port = match params.port.as_deref() {
         Some(p) => p.to_string(),
         None => {
-            ui.show_status("→ Searching for Flipper Zero...", Color::Cyan);
+            ui.show_status("→ Searching for Flipper Zero...", MessageKind::Info);
             find::find_flipper_port().map_err(|e| {
                 format!(
                     "{e}\n  Hint: specify the port manually: --auto --port <PORT>\n  \
@@ -40,13 +39,13 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
             })?
         }
     };
-    ui.show_status_value_bold("✓ Flipper port:", &port, Color::Green);
+    ui.show_status_value_bold("✓ Flipper port:", &port, MessageKind::Success);
 
-    ui.show_status("→ Opening RPC session...", Color::Cyan);
+    ui.show_status("→ Opening RPC session...", MessageKind::Info);
     let mut sess = FlipperSession::open(&port).context("cannot open RPC session")?;
-    ui.show_status("✓ RPC session is up (ping OK)", Color::Green);
+    ui.show_status("✓ RPC session is up (ping OK)", MessageKind::Success);
 
-    ui.show_status_detail("→ Listing", NFC_DIR, Color::Cyan, false);
+    ui.show_status_detail("→ Listing", NFC_DIR, MessageKind::Info, false);
     let entries = sess
         .storage_list(NFC_DIR)
         .with_context(|| format!("cannot list {NFC_DIR}"))?;
@@ -60,14 +59,14 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
     if targets.is_empty() {
         ui.show_status(
             "No logs (*.mfkey32.log / *.nested.log) found in /ext/nfc. Nothing to attack.",
-            Color::Yellow,
+            MessageKind::Warning,
         );
         return Ok(());
     }
     ui.show_status_detail(
         "✓ Found",
         &format!("{} file(s): {}", targets.len(), targets.join(", ")),
-        Color::Green,
+        MessageKind::Success,
         false,
     );
 
@@ -75,7 +74,7 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
     let mut remote_logs: Vec<String> = Vec::new();
     for name in &targets {
         let remote = format!("{NFC_DIR}/{name}");
-        ui.show_status_detail("↓ Downloading", &remote, Color::Cyan, false);
+        ui.show_status_detail("↓ Downloading", &remote, MessageKind::Info, false);
 
         let data = sess
             .storage_read(&remote)
@@ -91,7 +90,7 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
         remote_logs.push(remote);
     }
 
-    ui.show_status("→ Running attack...", Color::Cyan);
+    ui.show_status("→ Running attack...", MessageKind::Info);
 
     let mut all_keys: BTreeSet<String> = BTreeSet::new();
     let mut local_dicts: Vec<PathBuf> = Vec::new();
@@ -146,7 +145,7 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
         let should_delete = ui.confirm("Delete the original log files from the Flipper?", false);
         if should_delete {
             for remote in &remote_logs {
-                ui.show_status_detail("✗ Deleting from device", remote, Color::Cyan, false);
+                ui.show_status_detail("✗ Deleting from device", remote, MessageKind::Info, false);
                 if let Err(e) = sess.storage_delete(remote, false) {
                     ui.show_error(&format!("warning: failed to delete {remote}: {e}"));
                 }
