@@ -1,6 +1,5 @@
 use crate::core::model::MfClassicKey;
 use colored::*;
-use console::Term;
 use dialoguer::{Select, theme::ColorfulTheme};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::io::Write;
@@ -50,8 +49,8 @@ impl Ui {
             return;
         }
 
-        let term = Term::stdout();
-        let _ = term.clear_screen();
+        print!("\x1b[2J\x1b[H");
+        let _ = std::io::stdout().flush();
 
         let art = r#"
 ███╗   ███╗███████╗██╗  ██╗███████╗██╗   ██╗

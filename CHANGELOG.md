@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.6] - 2026-07-27
+## [1.0.6] - 2026-07-28
 
 ### Added
 
@@ -17,6 +17,8 @@
 - Unify error handling around a shared Rslt<T> (Box<dyn Error>) with context, instead of ad hoc Strings and a typed error that got stringified at the auto/ boundary
 - Throttle the should_stop poll in the crypto1 MSB search loop from every iteration to every 4096
 - Replace crypto1_recover's per-nonce malloc/free scratch buffers with reusable thread-local storage
+- Drop the console dependency, replacing its one use (clear_screen) with a plain ANSI escape
+- Stop deriving serde::Serialize/Deserialize on every generated protobuf type; nothing used it outside core::config::Config
 
 ### Fixed
 

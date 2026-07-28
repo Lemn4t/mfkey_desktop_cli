@@ -74,7 +74,6 @@ fn main() {
 
     cfg.protoc_executable(protoc);
 
-    cfg.type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]");
 
     cfg.compile_protos(&protos, &[proto_dir])
         .expect("prost-build failed");
