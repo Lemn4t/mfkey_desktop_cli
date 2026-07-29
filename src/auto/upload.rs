@@ -1,6 +1,6 @@
 use crate::ext::result::{ResultExt, Rslt};
 use crate::flipper::FlipperSession;
-use crate::ui::{MessageKind, Ui};
+use crate::ui::Ui;
 use std::collections::BTreeSet;
 use std::fs;
 use std::io::Write;
@@ -18,12 +18,7 @@ pub fn upload_dicts(ui: &Ui, sess: &mut FlipperSession, local_dicts: &[PathBuf])
     dicts.sort();
     dicts.dedup();
 
-    ui.show_status_detail(
-        "↑ Uploading",
-        &format!("{} candidate dict(s) to device...", dicts.len()),
-        MessageKind::Info,
-        false,
-    );
+    ui.show_uploading_dicts(dicts.len());
 
     for dict_path in &dicts {
         let file_name = match dict_path.file_name().and_then(|n| n.to_str()) {
@@ -51,7 +46,7 @@ pub fn upload_dicts(ui: &Ui, sess: &mut FlipperSession, local_dicts: &[PathBuf])
         let _ = sess.storage_delete(&remote_dict, false);
 
         match sess.storage_write(&remote_dict, &data) {
-            Ok(_) => ui.show_detail_dimmed("uploaded:", &remote_dict),
+            Ok(_) => ui.show_dict_uploaded(&remote_dict),
             Err(e) => ui.show_error(&format!("warning: upload {remote_dict} failed: {e}")),
         }
     }
@@ -64,15 +59,10 @@ pub fn merge_and_upload_keys(
     logs_dir: &Path,
 ) -> Rslt<()> {
     if all_keys.is_empty() {
-        ui.show_status("Attack found no keys.", MessageKind::Warning);
+        ui.show_no_keys_in_attack();
         return Ok(());
     }
-    ui.show_status_detail(
-        "✓ Found",
-        &format!("{} key(s)", all_keys.len()),
-        MessageKind::Success,
-        false,
-    );
+    ui.show_keys_found_count(all_keys.len());
 
     let result_path = logs_dir.join(RESULT_REMOTE_NAME);
     {
@@ -82,7 +72,7 @@ pub fn merge_and_upload_keys(
             writeln!(f, "{k}").context("write keys")?;
         }
     }
-    ui.show_detail_dimmed("keys saved:", &result_path.display().to_string());
+    ui.show_keys_saved(&result_path);
 
     let remote_out = format!("{ASSETS_DIR}/{RESULT_REMOTE_NAME}");
 
@@ -109,28 +99,11 @@ pub fn merge_and_upload_keys(
     }
     let added = final_keys.len() - before;
 
-    if had_existing {
-        ui.show_status_detail(
-            "→",
-            &format!("existing dict has {before} key(s); adding {added} new"),
-            MessageKind::Info,
-            false,
-        );
-    } else {
-        ui.show_status_detail(
-            "→",
-            "no existing dict on device, creating a new one",
-            MessageKind::Info,
-            false,
-        );
-    }
+    ui.show_dict_merge_status(had_existing.then_some(before), added);
 
     if had_existing && added == 0 {
-        ui.show_status(
-            "✓ Nothing new to upload (all keys already present).",
-            MessageKind::Success,
-        );
-        ui.show_detail(&format!("local copies: {}", logs_dir.display()));
+        ui.show_nothing_new_to_upload();
+        ui.show_local_copies(logs_dir);
         return Ok(());
     }
 
@@ -143,26 +116,16 @@ pub fn merge_and_upload_keys(
             "warning: cannot write local copy {result_path:?}: {e}"
         ));
     } else {
-        ui.show_detail_dimmed("keys saved locally:", &result_path.display().to_string());
+        ui.show_keys_saved_locally(&result_path);
     }
 
     let _ = sess.storage_delete(&remote_out, false);
-    ui.show_status_detail(
-        "↑ Uploading",
-        &format!("{remote_out} (full file)"),
-        MessageKind::Info,
-        false,
-    );
+    ui.show_uploading_full_dict(&remote_out);
     sess.storage_write(&remote_out, &upload)
         .with_context(|| format!("upload {remote_out}"))?;
 
-    ui.show_status_detail(
-        "✓ Done. Keys uploaded to",
-        &remote_out,
-        MessageKind::Success,
-        true,
-    );
-    ui.show_detail(&format!("local copies: {}", logs_dir.display()));
+    ui.show_upload_done(&remote_out);
+    ui.show_local_copies(logs_dir);
 
     Ok(())
 }

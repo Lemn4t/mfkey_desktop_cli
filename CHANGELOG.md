@@ -20,6 +20,7 @@
 - Stop deriving serde::Serialize/Deserialize on every generated protobuf type; nothing used it outside core::config::Config
 - Introduce a MessageKind enum so status colors are mapped in one place instead of scattered Color:: literals in auto/mod.rs and auto/upload.rs
 - Extract src/ui/theme.rs for separators, glyphs, and style roles, removing dead colored()-branches left over from earlier Ui refactors
+- Replace Ui's generic status/detail calls with named domain methods, so auto/mod.rs and auto/upload.rs no longer choose their own icons or colors
 
 ### Fixed
 
