@@ -22,6 +22,7 @@
 - Extract src/ui/theme.rs for separators, glyphs, and style roles, removing dead colored()-branches left over from earlier Ui refactors
 - Replace Ui's generic status/detail calls with named domain methods, so auto/mod.rs and auto/upload.rs no longer choose their own icons or colors
 - Route every Ui line through a shared write_line/write_err_line so an active progress bar can no longer be corrupted by interleaved output
+- Unify --plain and colored progress reporting on a single indicatif ProgressBar instead of a hand-rolled \r print in --plain mode
 
 ### Fixed
 

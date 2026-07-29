@@ -27,6 +27,21 @@ struct UiInner {
     total_nonces: usize,
 }
 
+struct Progress {
+    current: usize,
+    total: usize,
+}
+
+impl Progress {
+    fn pct(&self) -> f32 {
+        if self.total == 0 {
+            0.0
+        } else {
+            self.current as f32 / self.total as f32 * 100.0
+        }
+    }
+}
+
 pub struct Ui {
     opts: UiOptions,
     inner: Mutex<UiInner>,
@@ -383,23 +398,26 @@ impl Ui {
     }
 
     pub fn begin_progress(&self, total_nonces: usize) {
-        if self.opts.plain_ui {
-            return;
-        }
         let mut inner = self.inner.lock().unwrap();
         inner.total_nonces = total_nonces;
         if inner.bar.is_some() {
             return;
         }
         let pb = ProgressBar::new(total_nonces.max(1) as u64);
-        let style = ProgressStyle::with_template(
-            "{prefix:.bold.dim} [{bar:30.cyan/blue}] {pos}/{len} {msg}",
-        )
-        .unwrap_or_else(|_| ProgressStyle::default_bar())
-        .progress_chars("█▓░");
-        pb.set_style(style);
-        pb.set_prefix("▸ Attacking");
-        pb.enable_steady_tick(Duration::from_millis(120));
+        if self.opts.plain_ui {
+            let style = ProgressStyle::with_template("{msg}")
+                .unwrap_or_else(|_| ProgressStyle::default_bar());
+            pb.set_style(style);
+        } else {
+            let style = ProgressStyle::with_template(
+                "{prefix:.bold.dim} [{bar:30.cyan/blue}] {pos}/{len} {msg}",
+            )
+            .unwrap_or_else(|_| ProgressStyle::default_bar())
+            .progress_chars("█▓░");
+            pb.set_style(style);
+            pb.set_prefix("▸ Attacking");
+            pb.enable_steady_tick(Duration::from_millis(120));
+        }
         inner.bar = Some(pb);
     }
 
@@ -412,19 +430,25 @@ impl Ui {
         stage_progress: f32,
         uid: u32,
     ) {
-        if self.opts.plain_ui {
-            let nonce_pct = if nonce_total > 0 {
-                nonce_current as f32 / nonce_total as f32 * 100.0
-            } else {
-                0.0
-            };
-            let msb_pct = if msb_total > 0 {
-                msb_current as f32 / msb_total as f32 * 100.0
-            } else {
-                0.0
-            };
-            print!(
-                "\rProgress: Nonce {}/{} ({:.1}%) | MSB {}/{} ({:.1}%) | Current {:.1}%   ",
+        let inner = self.inner.lock().unwrap();
+        let Some(pb) = inner.bar.as_ref() else {
+            return;
+        };
+        pb.set_position(nonce_current.min(nonce_total) as u64);
+
+        let msg = if self.opts.plain_ui {
+            let nonce_pct = Progress {
+                current: nonce_current,
+                total: nonce_total,
+            }
+            .pct();
+            let msb_pct = Progress {
+                current: msb_current,
+                total: msb_total,
+            }
+            .pct();
+            format!(
+                "Progress: Nonce {}/{} ({:.1}%) | MSB {}/{} ({:.1}%) | Current {:.1}%",
                 nonce_current,
                 nonce_total,
                 nonce_pct,
@@ -432,17 +456,11 @@ impl Ui {
                 msb_total,
                 msb_pct,
                 stage_progress
-            );
-            let _ = std::io::stdout().flush();
-            return;
-        }
-
-        let inner = self.inner.lock().unwrap();
-        if let Some(pb) = inner.bar.as_ref() {
-            pb.set_position(nonce_current.min(nonce_total) as u64);
-            let msg = format!("UID 0x{:08X} | MSB {}/{}", uid, msb_current, msb_total);
-            pb.set_message(msg);
-        }
+            )
+        } else {
+            format!("UID 0x{:08X} | MSB {}/{}", uid, msb_current, msb_total)
+        };
+        pb.set_message(msg);
     }
 
     pub fn clear_progress(&self) {
@@ -451,12 +469,6 @@ impl Ui {
             pb.finish_and_clear();
         }
         inner.total_nonces = 0;
-        let plain = self.opts.plain_ui;
-        drop(inner);
-
-        if plain {
-            self.write_line("");
-        }
     }
 
     pub fn show_found_key(&self, key: &MfClassicKey) {
