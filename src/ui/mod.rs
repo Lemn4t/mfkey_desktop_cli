@@ -43,11 +43,29 @@ impl Ui {
         }
     }
 
+    fn write_line(&self, line: &str) {
+        let inner = self.inner.lock().unwrap();
+        if let Some(pb) = inner.bar.as_ref() {
+            pb.println(line);
+        } else {
+            println!("{line}");
+        }
+    }
+
+    fn write_err_line(&self, line: &str) {
+        let inner = self.inner.lock().unwrap();
+        if let Some(pb) = inner.bar.as_ref() {
+            pb.suspend(|| eprintln!("{line}"));
+        } else {
+            eprintln!("{line}");
+        }
+    }
+
     pub fn show_title(&self) {
         let plain = self.opts.plain_ui;
         if plain {
-            println!("MIFARE Classic Key Recovery Tool");
-            println!("{}", theme::heavy_rule(plain));
+            self.write_line("MIFARE Classic Key Recovery Tool");
+            self.write_line(&theme::heavy_rule(plain));
             return;
         }
 
@@ -62,30 +80,27 @@ impl Ui {
 ██║ ╚═╝ ██║██║     ██║  ██╗███████╗   ██║
 ╚═╝     ╚═╝╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   "#;
 
-        println!("{}", theme::banner_title(art, plain));
-        println!(
-            "{}",
-            theme::block_style(
-                &format!(
-                    "{} Flipper Zero :: MIFARE Classic Key Recovery Tool {}",
-                    glyph::BANNER_LEFT,
-                    glyph::BANNER_RIGHT
-                ),
-                plain
-            )
-        );
-        println!("{}\n", theme::heavy_rule(plain));
+        self.write_line(&theme::banner_title(art, plain));
+        self.write_line(&theme::block_style(
+            &format!(
+                "{} Flipper Zero :: MIFARE Classic Key Recovery Tool {}",
+                glyph::BANNER_LEFT,
+                glyph::BANNER_RIGHT
+            ),
+            plain,
+        ));
+        self.write_line(&format!("{}\n", theme::heavy_rule(plain)));
     }
 
     pub fn show_config(&self, input: &str, output: &str, dict_dir: Option<&str>) {
         let plain = self.opts.plain_ui;
         if plain {
-            println!("Input file:  {}", input);
-            println!("Output file: {}", output);
+            self.write_line(&format!("Input file:  {}", input));
+            self.write_line(&format!("Output file: {}", output));
             if let Some(d) = dict_dir {
-                println!("Dict output dir: {}", d);
+                self.write_line(&format!("Dict output dir: {}", d));
             }
-            println!("{}\n", theme::heavy_rule(plain));
+            self.write_line(&format!("{}\n", theme::heavy_rule(plain)));
             return;
         }
 
@@ -94,25 +109,29 @@ impl Ui {
             format!("{} Output file: {}", glyph::BULLET, output),
         ];
         for l in &lines {
-            println!("{}", theme::accent(l, plain));
+            self.write_line(&theme::accent(l, plain));
         }
         if let Some(d) = dict_dir {
             let l = format!("{} Dict dir:    {}", glyph::BULLET, d);
-            println!("{}", theme::accent(&l, plain));
+            self.write_line(&theme::accent(&l, plain));
         }
-        println!();
+        self.write_line("");
     }
 
     pub fn show_loading(&self, filename: &str) {
         if self.opts.plain_ui {
-            println!("Loading nonces from {}...", filename);
+            self.write_line(&format!("Loading nonces from {}...", filename));
         } else {
-            println!("{} Loading nonces from {}...", glyph::LOADING, filename);
+            self.write_line(&format!(
+                "{} Loading nonces from {}...",
+                glyph::LOADING,
+                filename
+            ));
         }
     }
 
     fn status_line(&self, text: &str, kind: MessageKind) {
-        println!("{}", theme::colored(text, kind, self.opts.plain_ui));
+        self.write_line(&theme::colored(text, kind, self.opts.plain_ui));
     }
 
     fn status_detail_line(&self, prefix: &str, detail: &str, kind: MessageKind, bold: bool) {
@@ -122,22 +141,22 @@ impl Ui {
         } else {
             theme::colored(prefix, kind, plain)
         };
-        println!("{} {}", styled_prefix, detail);
+        self.write_line(&format!("{} {}", styled_prefix, detail));
     }
 
     fn status_value_line(&self, prefix: &str, value: &str, kind: MessageKind) {
         let plain = self.opts.plain_ui;
-        println!(
+        self.write_line(&format!(
             "{} {}",
             theme::colored(prefix, kind, plain),
             theme::emphasis(value, plain)
-        );
+        ));
     }
 
     fn dimmed_detail_line(&self, prefix: &str, detail: &str) {
         let plain = self.opts.plain_ui;
         let line = format!("{} {}", theme::muted(prefix, plain), detail);
-        println!("{}", theme::indent(1, &line));
+        self.write_line(&theme::indent(1, &line));
     }
 
     pub fn show_searching_for_flipper(&self) {
@@ -266,10 +285,10 @@ impl Ui {
     pub fn show_nonce_loaded(&self, index: usize, uid: u32, attack_type: &str) {
         let plain = self.opts.plain_ui;
         if plain {
-            println!(
+            self.write_line(&format!(
                 "Loaded nonce {}: UID=0x{:08X}, attack={}",
                 index, uid, attack_type
-            );
+            ));
             return;
         }
 
@@ -279,27 +298,27 @@ impl Ui {
             MessageKind::Success
         };
         let tag = theme::colored(&format!("[{}]", attack_type), kind, plain);
-        println!(
+        self.write_line(&format!(
             "{} Loaded nonce {}: UID=0x{:08X} {}",
             theme::indent(1, glyph::TREE),
             index,
             uid,
             tag
-        );
+        ));
     }
 
     pub fn show_loading_complete(&self, total: usize) {
         let plain = self.opts.plain_ui;
         if plain {
-            println!("Total nonces loaded: {}\n", total);
+            self.write_line(&format!("Total nonces loaded: {}\n", total));
             return;
         }
         let n = theme::emphasis(&total.to_string(), plain);
-        println!(
+        self.write_line(&format!(
             "{} Total nonces loaded: {}\n",
             theme::indent(1, glyph::TREE),
             n
-        );
+        ));
     }
 
     pub fn show_hardnested_unsupported(&self, context: Option<&str>, skipping: bool) {
@@ -312,10 +331,11 @@ impl Ui {
                 format!("HardNested nonces detected — this attack is not supported (yet){suffix}")
             }
         };
-        eprintln!(
-            "{}",
-            theme::colored_bold(&msg, MessageKind::Warning, self.opts.plain_ui)
-        );
+        self.write_err_line(&theme::colored_bold(
+            &msg,
+            MessageKind::Warning,
+            self.opts.plain_ui,
+        ));
     }
 
     pub fn show_hardnested_note(&self, context: Option<&str>) {
@@ -325,37 +345,41 @@ impl Ui {
             ),
             None => "Note: HardNested nonces were also found in this file and were skipped — that attack is not supported (yet).".to_string(),
         };
-        println!(
-            "{}",
-            theme::colored(&msg, MessageKind::Warning, self.opts.plain_ui)
-        );
+        self.write_line(&theme::colored(
+            &msg,
+            MessageKind::Warning,
+            self.opts.plain_ui,
+        ));
     }
 
     pub fn show_error(&self, text: &str) {
-        eprintln!(
-            "{}",
-            theme::colored(text, MessageKind::Error, self.opts.plain_ui)
-        );
+        self.write_err_line(&theme::colored(
+            text,
+            MessageKind::Error,
+            self.opts.plain_ui,
+        ));
     }
 
     pub fn show_interrupt(&self) {
-        eprintln!("\n\nReceived interrupt signal. Stopping gracefully...");
+        self.write_err_line("\n\nReceived interrupt signal. Stopping gracefully...");
     }
 
     pub fn show_detail(&self, text: &str) {
-        println!("{}", theme::indent(1, text));
+        self.write_line(&theme::indent(1, text));
     }
 
     pub fn show_start(&self) {
         let plain = self.opts.plain_ui;
         if plain {
-            println!("Starting key recovery... (Press Ctrl+C to stop gracefully.)\n");
+            self.write_line("Starting key recovery... (Press Ctrl+C to stop gracefully.)\n");
             return;
         }
-        let msg = format!("{} Starting key recovery... ", glyph::BLOCK);
-        print!("{}", theme::block_style(&msg, plain));
-        println!("(Press Ctrl+C to stop)");
-        println!("{}", theme::light_rule());
+        let msg = theme::block_style(
+            &format!("{} Starting key recovery... ", glyph::BLOCK),
+            plain,
+        );
+        self.write_line(&format!("{}(Press Ctrl+C to stop)", msg));
+        self.write_line(&theme::light_rule());
     }
 
     pub fn begin_progress(&self, total_nonces: usize) {
@@ -427,30 +451,23 @@ impl Ui {
             pb.finish_and_clear();
         }
         inner.total_nonces = 0;
+        let plain = self.opts.plain_ui;
+        drop(inner);
 
-        if self.opts.plain_ui {
-            println!();
+        if plain {
+            self.write_line("");
         }
     }
 
     pub fn show_found_key(&self, key: &MfClassicKey) {
         let plain = self.opts.plain_ui;
-        let inner = self.inner.lock().unwrap();
-        let print_line = |line: String| {
-            if let Some(pb) = inner.bar.as_ref() {
-                pb.println(line);
-            } else {
-                println!("{}", line);
-            }
-        };
-
         if plain {
-            print_line(format!("Found key: {}", key.to_hex()));
+            self.write_line(&format!("Found key: {}", key.to_hex()));
             return;
         }
 
         let line = format!("{} Found key: {}", glyph::CHECK, key.to_hex());
-        print_line(theme::colored(&line, MessageKind::Success, plain));
+        self.write_line(&theme::colored(&line, MessageKind::Success, plain));
     }
 
     pub fn show_summary(&self, total_nonces: usize, found_keys: usize, candidate_keys: usize) {
@@ -458,30 +475,34 @@ impl Ui {
         let plain = self.opts.plain_ui;
 
         if plain {
-            println!("\n{}", theme::heavy_rule(plain));
-            println!("Key recovery completed!\n");
-            println!("Summary:");
-            println!("Total nonces processed: {}", total_nonces);
-            println!("Keys found: {}", found_keys);
-            println!("Candidate keys: {}", candidate_keys);
+            self.write_line(&format!("\n{}", theme::heavy_rule(plain)));
+            self.write_line("Key recovery completed!\n");
+            self.write_line("Summary:");
+            self.write_line(&format!("Total nonces processed: {}", total_nonces));
+            self.write_line(&format!("Keys found: {}", found_keys));
+            self.write_line(&format!("Candidate keys: {}", candidate_keys));
             return;
         }
 
-        println!("{}", theme::heavy_rule(plain));
+        self.write_line(&theme::heavy_rule(plain));
         let header = format!(
             "{} Key Recovery Complete! {}",
             glyph::BLOCK,
             glyph::BLOCK_END
         );
-        println!("{}", theme::block_style(&header, plain));
+        self.write_line(&theme::block_style(&header, plain));
 
-        println!("\nSummary:");
-        println!("{} Total nonces processed: {}", glyph::BULLET, total_nonces);
+        self.write_line("\nSummary:");
+        self.write_line(&format!(
+            "{} Total nonces processed: {}",
+            glyph::BULLET,
+            total_nonces
+        ));
 
         let kf = format!("{} Keys found: {}", glyph::BULLET, found_keys);
         let ck = format!("{} Candidate keys: {}", glyph::BULLET, candidate_keys);
-        println!("{}", theme::colored(&kf, MessageKind::Success, plain));
-        println!("{}", theme::accent(&ck, plain));
+        self.write_line(&theme::colored(&kf, MessageKind::Success, plain));
+        self.write_line(&theme::accent(&ck, plain));
     }
 
     pub fn show_found_keys_list(&self, keys: &[MfClassicKey]) {
@@ -490,7 +511,7 @@ impl Ui {
         }
         let plain = self.opts.plain_ui;
 
-        println!("\nFound Keys:");
+        self.write_line("\nFound Keys:");
         for k in keys {
             let hex = k.to_hex();
             let line = if plain {
@@ -502,23 +523,20 @@ impl Ui {
                     plain,
                 )
             };
-            println!("{}", theme::indent(1, &line));
+            self.write_line(&theme::indent(1, &line));
         }
     }
 
     pub fn show_saved_files(&self, keys_file: Option<&str>, keys_count: usize) {
-        println!("\nFiles saved:");
+        self.write_line("\nFiles saved:");
         if let Some(f) = keys_file
             && keys_count > 0
         {
             let line = format!("{} {} ({} keys)", glyph::BULLET, f, keys_count);
-            println!(
-                "{}",
-                theme::indent(
-                    1,
-                    &theme::colored(&line, MessageKind::Success, self.opts.plain_ui)
-                )
-            );
+            self.write_line(&theme::indent(
+                1,
+                &theme::colored(&line, MessageKind::Success, self.opts.plain_ui),
+            ));
         }
     }
 
@@ -528,43 +546,49 @@ impl Ui {
         }
         let plain = self.opts.plain_ui;
 
-        println!("\nCandidate dictionaries ({} files):", dicts.len());
+        self.write_line(&format!(
+            "\nCandidate dictionaries ({} files):",
+            dicts.len()
+        ));
         for (path, count) in dicts {
             let filename = std::path::Path::new(path)
                 .file_name()
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or_else(|| path.clone());
             let line = format!("{} {} ({} candidates)", glyph::BULLET, filename, count);
-            println!("{}", theme::indent(1, &theme::accent(&line, plain)));
+            self.write_line(&theme::indent(1, &theme::accent(&line, plain)));
         }
     }
 
     pub fn show_no_keys_found(&self) {
         let plain = self.opts.plain_ui;
         if plain {
-            println!("No keys were recovered. This could happen if:");
-            println!("  * The nonces are invalid or corrupted");
-            println!("  * The keyspace being searched doesn't contain the key");
-            println!("  * The attack was interrupted before completion\n");
+            self.write_line("No keys were recovered. This could happen if:");
+            self.write_line("  * The nonces are invalid or corrupted");
+            self.write_line("  * The keyspace being searched doesn't contain the key");
+            self.write_line("  * The attack was interrupted before completion\n");
             return;
         }
 
         let line = format!("\n{} No keys were recovered.", glyph::CROSS);
-        println!("{}", theme::colored(&line, MessageKind::Error, plain));
-        println!("\nThis could happen if:");
-        println!("  {} The nonces are invalid or corrupted", glyph::DOT);
-        println!(
+        self.write_line(&theme::colored(&line, MessageKind::Error, plain));
+        self.write_line("\nThis could happen if:");
+        self.write_line(&format!(
+            "  {} The nonces are invalid or corrupted",
+            glyph::DOT
+        ));
+        self.write_line(&format!(
             "  {} The keyspace being searched doesn't contain the key",
             glyph::DOT
-        );
-        println!(
+        ));
+        self.write_line(&format!(
             "  {} The attack was interrupted before completion\n",
             glyph::DOT
-        );
+        ));
     }
 
     pub fn show_disclaimer(&self, text: &str) {
-        println!("{}", theme::accent(text, self.opts.plain_ui));
+        self.write_line(&theme::accent(text, self.opts.plain_ui));
     }
 
     pub fn show_pill_taken(&self, accepted: bool) {
@@ -573,10 +597,11 @@ impl Ui {
         } else {
             format!("{} Blue pill taken", glyph::CHECK)
         };
-        println!(
-            "{}",
-            theme::colored(&text, MessageKind::Success, self.opts.plain_ui)
-        );
+        self.write_line(&theme::colored(
+            &text,
+            MessageKind::Success,
+            self.opts.plain_ui,
+        ));
     }
 
     pub fn confirm(&self, prompt: &str, default_yes: bool) -> bool {
