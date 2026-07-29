@@ -8,6 +8,7 @@
 - Add HardNested detection stub
 - Delete auto-mode logs only after a successful attack, with confirmation
 - Add unit tests for core::parser (line classification, mfkey32/static_nested/static_encrypted/HardNested, load_nested_nonces)
+- Auto-detect NO_COLOR and non-interactive stdout, forcing plain output even without --plain
 
 ### Updated
 

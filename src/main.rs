@@ -45,7 +45,7 @@ fn display_path(p: &std::path::Path) -> String {
 fn main() {
     let params = params::parse();
     let opts = UiOptions {
-        plain_ui: params.plain_ui(),
+        plain_ui: ui::should_use_plain_mode(params.plain_ui()),
     };
     let ui = Ui::new(opts);
     if !resolve_disclaimer_acceptance(&ui, params.accept_disclaimer()) {
@@ -147,7 +147,7 @@ fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) {
         ui.show_no_keys_found();
     }
 
-    if !params.plain_ui && (found_count > 0 || candidate_total_count > 0) {
+    if !ui.is_plain() && (found_count > 0 || candidate_total_count > 0) {
         let confirmed = ui.confirm("Should I show the full path to the saved files?", false);
 
         if confirmed {

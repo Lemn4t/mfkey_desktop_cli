@@ -22,6 +22,12 @@ impl Default for UiOptions {
     }
 }
 
+pub fn should_use_plain_mode(requested_plain: bool) -> bool {
+    requested_plain
+        || std::env::var_os("NO_COLOR").is_some_and(|v| !v.is_empty())
+        || !console::user_attended()
+}
+
 struct UiInner {
     bar: Option<ProgressBar>,
     total_nonces: usize,
@@ -56,6 +62,10 @@ impl Ui {
                 total_nonces: 0,
             }),
         }
+    }
+
+    pub fn is_plain(&self) -> bool {
+        self.opts.plain_ui
     }
 
     fn write_line(&self, line: &str) {
