@@ -376,7 +376,7 @@ impl Ui {
     }
 
     pub fn show_title(&self) {
-        let plain = self.opts.mode.is_plain();
+        let plain = self.is_plain();
         if !plain {
             let term = Term::stdout();
             let _ = term.clear_screen();
@@ -393,7 +393,7 @@ impl Ui {
     }
 
     pub fn show_loading(&self, filename: &str) {
-        if self.opts.mode.is_plain() {
+        if self.is_plain() {
             self.write_line(&format!("Loading nonces from {}...", filename));
         } else {
             self.write_line(&format!(
@@ -405,11 +405,11 @@ impl Ui {
     }
 
     fn status_line(&self, text: &str, kind: MessageKind) {
-        self.write_line(&theme::colored(text, kind, self.opts.mode.is_plain()));
+        self.write_line(&theme::colored(text, kind, self.is_plain()));
     }
 
     fn status_detail_line(&self, prefix: &str, detail: &str, kind: MessageKind, bold: bool) {
-        let plain = self.opts.mode.is_plain();
+        let plain = self.is_plain();
         let styled_prefix = if bold {
             theme::colored_bold(prefix, kind, plain)
         } else {
@@ -419,7 +419,7 @@ impl Ui {
     }
 
     fn status_value_line(&self, prefix: &str, value: &str, kind: MessageKind) {
-        let plain = self.opts.mode.is_plain();
+        let plain = self.is_plain();
         self.write_line(&format!(
             "{} {}",
             theme::colored(prefix, kind, plain),
@@ -428,7 +428,7 @@ impl Ui {
     }
 
     fn dimmed_detail_line(&self, prefix: &str, detail: &str) {
-        let plain = self.opts.mode.is_plain();
+        let plain = self.is_plain();
         let line = format!("{} {}", theme::muted(prefix, plain), detail);
         self.write_line(&theme::indent(1, &line));
     }
@@ -579,11 +579,7 @@ impl Ui {
     }
 
     pub fn show_error(&self, text: &str) {
-        self.write_err_line(&theme::colored(
-            text,
-            MessageKind::Error,
-            self.opts.mode.is_plain(),
-        ));
+        self.write_err_line(&theme::colored(text, MessageKind::Error, self.is_plain()));
     }
 
     pub fn show_interrupt(&self) {
@@ -607,7 +603,7 @@ impl Ui {
             return;
         }
         let pb = ProgressBar::new(total_nonces.max(1) as u64);
-        if self.opts.mode.is_plain() {
+        if self.is_plain() {
             let style = ProgressStyle::with_template("{msg}")
                 .unwrap_or_else(|_| ProgressStyle::default_bar());
             pb.set_style(style);
@@ -639,7 +635,7 @@ impl Ui {
         };
         pb.set_position(nonce_current.min(nonce_total) as u64);
 
-        let msg = if self.opts.mode.is_plain() {
+        let msg = if self.is_plain() {
             let nonce_pct = Progress {
                 current: nonce_current,
                 total: nonce_total,
@@ -675,7 +671,7 @@ impl Ui {
     }
 
     pub fn show_found_key(&self, key: &MfClassicKey) {
-        let plain = self.opts.mode.is_plain();
+        let plain = self.is_plain();
         if plain {
             self.write_line(&format!("Found key: {}", key.to_hex()));
             return;
@@ -717,7 +713,7 @@ impl Ui {
     }
 
     pub fn show_disclaimer(&self, text: &str) {
-        self.write_line(&theme::accent(text, self.opts.mode.is_plain()));
+        self.write_line(&theme::accent(text, self.is_plain()));
     }
 
     pub fn show_pill_taken(&self, accepted: bool) {
@@ -729,12 +725,12 @@ impl Ui {
         self.write_line(&theme::colored(
             &text,
             MessageKind::Success,
-            self.opts.mode.is_plain(),
+            self.is_plain(),
         ));
     }
 
     pub fn confirm(&self, prompt: &str, default_yes: bool) -> bool {
-        if !self.opts.mode.is_plain() {
+        if !self.is_plain() {
             let theme = ColorfulTheme::default();
             let items = &["Yes", "No"];
             let default = if default_yes { 0 } else { 1 };
