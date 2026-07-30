@@ -45,7 +45,7 @@ fn display_path(p: &std::path::Path) -> String {
 fn main() {
     let params = params::parse();
     let opts = UiOptions {
-        plain_ui: ui::should_use_plain_mode(params.plain_ui()),
+        mode: ui::resolve_output_mode(params.plain_ui()),
     };
     let ui = Ui::new(opts);
     if !resolve_disclaimer_acceptance(&ui, params.accept_disclaimer()) {

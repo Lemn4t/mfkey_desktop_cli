@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.6] - 2026-07-29
+## [1.0.6] - 2026-07-30
 
 ### Added
 
@@ -24,6 +24,7 @@
 - Replace Ui's generic status/detail calls with named domain methods, so auto/mod.rs and auto/upload.rs no longer choose their own icons or colors
 - Route every Ui line through a shared write_line/write_err_line so an active progress bar can no longer be corrupted by interleaved output
 - Unify --plain and colored progress reporting on a single indicatif ProgressBar instead of a hand-rolled \r print in --plain mode
+- Replace UiOptions' bool plain_ui with an OutputMode enum (Fancy/Plain), leaving room for a future Json mode
 
 ### Fixed
 

@@ -11,21 +11,40 @@ use theme::glyph;
 
 use theme::MessageKind;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OutputMode {
+    Fancy,
+    Plain,
+}
+
+impl OutputMode {
+    pub fn is_plain(self) -> bool {
+        matches!(self, OutputMode::Plain)
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct UiOptions {
-    pub plain_ui: bool,
+    pub mode: OutputMode,
 }
 
 impl Default for UiOptions {
     fn default() -> Self {
-        UiOptions { plain_ui: true }
+        UiOptions {
+            mode: OutputMode::Plain,
+        }
     }
 }
 
-pub fn should_use_plain_mode(requested_plain: bool) -> bool {
-    requested_plain
+pub fn resolve_output_mode(requested_plain: bool) -> OutputMode {
+    let plain = requested_plain
         || std::env::var_os("NO_COLOR").is_some_and(|v| !v.is_empty())
-        || !console::user_attended()
+        || !console::user_attended();
+    if plain {
+        OutputMode::Plain
+    } else {
+        OutputMode::Fancy
+    }
 }
 
 struct UiInner {
@@ -65,7 +84,7 @@ impl Ui {
     }
 
     pub fn is_plain(&self) -> bool {
-        self.opts.plain_ui
+        self.opts.mode.is_plain()
     }
 
     fn write_line(&self, line: &str) {
@@ -87,7 +106,7 @@ impl Ui {
     }
 
     pub fn show_title(&self) {
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
         if plain {
             self.write_line("MIFARE Classic Key Recovery Tool");
             self.write_line(&theme::heavy_rule(plain));
@@ -118,7 +137,7 @@ impl Ui {
     }
 
     pub fn show_config(&self, input: &str, output: &str, dict_dir: Option<&str>) {
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
         if plain {
             self.write_line(&format!("Input file:  {}", input));
             self.write_line(&format!("Output file: {}", output));
@@ -144,7 +163,7 @@ impl Ui {
     }
 
     pub fn show_loading(&self, filename: &str) {
-        if self.opts.plain_ui {
+        if self.opts.mode.is_plain() {
             self.write_line(&format!("Loading nonces from {}...", filename));
         } else {
             self.write_line(&format!(
@@ -156,11 +175,11 @@ impl Ui {
     }
 
     fn status_line(&self, text: &str, kind: MessageKind) {
-        self.write_line(&theme::colored(text, kind, self.opts.plain_ui));
+        self.write_line(&theme::colored(text, kind, self.opts.mode.is_plain()));
     }
 
     fn status_detail_line(&self, prefix: &str, detail: &str, kind: MessageKind, bold: bool) {
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
         let styled_prefix = if bold {
             theme::colored_bold(prefix, kind, plain)
         } else {
@@ -170,7 +189,7 @@ impl Ui {
     }
 
     fn status_value_line(&self, prefix: &str, value: &str, kind: MessageKind) {
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
         self.write_line(&format!(
             "{} {}",
             theme::colored(prefix, kind, plain),
@@ -179,7 +198,7 @@ impl Ui {
     }
 
     fn dimmed_detail_line(&self, prefix: &str, detail: &str) {
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
         let line = format!("{} {}", theme::muted(prefix, plain), detail);
         self.write_line(&theme::indent(1, &line));
     }
@@ -308,7 +327,7 @@ impl Ui {
     }
 
     pub fn show_nonce_loaded(&self, index: usize, uid: u32, attack_type: &str) {
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
         if plain {
             self.write_line(&format!(
                 "Loaded nonce {}: UID=0x{:08X}, attack={}",
@@ -333,7 +352,7 @@ impl Ui {
     }
 
     pub fn show_loading_complete(&self, total: usize) {
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
         if plain {
             self.write_line(&format!("Total nonces loaded: {}\n", total));
             return;
@@ -359,7 +378,7 @@ impl Ui {
         self.write_err_line(&theme::colored_bold(
             &msg,
             MessageKind::Warning,
-            self.opts.plain_ui,
+            self.opts.mode.is_plain(),
         ));
     }
 
@@ -373,7 +392,7 @@ impl Ui {
         self.write_line(&theme::colored(
             &msg,
             MessageKind::Warning,
-            self.opts.plain_ui,
+            self.opts.mode.is_plain(),
         ));
     }
 
@@ -381,7 +400,7 @@ impl Ui {
         self.write_err_line(&theme::colored(
             text,
             MessageKind::Error,
-            self.opts.plain_ui,
+            self.opts.mode.is_plain(),
         ));
     }
 
@@ -394,7 +413,7 @@ impl Ui {
     }
 
     pub fn show_start(&self) {
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
         if plain {
             self.write_line("Starting key recovery... (Press Ctrl+C to stop gracefully.)\n");
             return;
@@ -414,7 +433,7 @@ impl Ui {
             return;
         }
         let pb = ProgressBar::new(total_nonces.max(1) as u64);
-        if self.opts.plain_ui {
+        if self.opts.mode.is_plain() {
             let style = ProgressStyle::with_template("{msg}")
                 .unwrap_or_else(|_| ProgressStyle::default_bar());
             pb.set_style(style);
@@ -446,7 +465,7 @@ impl Ui {
         };
         pb.set_position(nonce_current.min(nonce_total) as u64);
 
-        let msg = if self.opts.plain_ui {
+        let msg = if self.opts.mode.is_plain() {
             let nonce_pct = Progress {
                 current: nonce_current,
                 total: nonce_total,
@@ -482,7 +501,7 @@ impl Ui {
     }
 
     pub fn show_found_key(&self, key: &MfClassicKey) {
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
         if plain {
             self.write_line(&format!("Found key: {}", key.to_hex()));
             return;
@@ -494,7 +513,7 @@ impl Ui {
 
     pub fn show_summary(&self, total_nonces: usize, found_keys: usize, candidate_keys: usize) {
         self.clear_progress();
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
 
         if plain {
             self.write_line(&format!("\n{}", theme::heavy_rule(plain)));
@@ -531,7 +550,7 @@ impl Ui {
         if keys.is_empty() {
             return;
         }
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
 
         self.write_line("\nFound Keys:");
         for k in keys {
@@ -557,7 +576,7 @@ impl Ui {
             let line = format!("{} {} ({} keys)", glyph::BULLET, f, keys_count);
             self.write_line(&theme::indent(
                 1,
-                &theme::colored(&line, MessageKind::Success, self.opts.plain_ui),
+                &theme::colored(&line, MessageKind::Success, self.opts.mode.is_plain()),
             ));
         }
     }
@@ -566,7 +585,7 @@ impl Ui {
         if dicts.is_empty() {
             return;
         }
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
 
         self.write_line(&format!(
             "\nCandidate dictionaries ({} files):",
@@ -583,7 +602,7 @@ impl Ui {
     }
 
     pub fn show_no_keys_found(&self) {
-        let plain = self.opts.plain_ui;
+        let plain = self.opts.mode.is_plain();
         if plain {
             self.write_line("No keys were recovered. This could happen if:");
             self.write_line("  * The nonces are invalid or corrupted");
@@ -610,7 +629,7 @@ impl Ui {
     }
 
     pub fn show_disclaimer(&self, text: &str) {
-        self.write_line(&theme::accent(text, self.opts.plain_ui));
+        self.write_line(&theme::accent(text, self.opts.mode.is_plain()));
     }
 
     pub fn show_pill_taken(&self, accepted: bool) {
@@ -622,12 +641,12 @@ impl Ui {
         self.write_line(&theme::colored(
             &text,
             MessageKind::Success,
-            self.opts.plain_ui,
+            self.opts.mode.is_plain(),
         ));
     }
 
     pub fn confirm(&self, prompt: &str, default_yes: bool) -> bool {
-        if !self.opts.plain_ui {
+        if !self.opts.mode.is_plain() {
             let theme = ColorfulTheme::default();
             let items = &["Yes", "No"];
             let default = if default_yes { 0 } else { 1 };
