@@ -67,6 +67,276 @@ impl Progress {
     }
 }
 
+fn render_title(mode: OutputMode) -> Vec<String> {
+    let plain = mode.is_plain();
+    if plain {
+        return vec![
+            "MIFARE Classic Key Recovery Tool".to_string(),
+            theme::heavy_rule(plain),
+        ];
+    }
+
+    let art = r#"
+███╗   ███╗███████╗██╗  ██╗███████╗██╗   ██╗
+████╗ ████║██╔════╝██║ ██╔╝██╔════╝╚██╗ ██╔╝
+██╔████╔██║█████╗  █████╔╝ █████╗   ╚████╔╝
+██║╚██╔╝██║██╔══╝  ██╔═██╗ ██╔══╝    ╚██╔╝
+██║ ╚═╝ ██║██║     ██║  ██╗███████╗   ██║
+╚═╝     ╚═╝╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   "#;
+
+    vec![
+        theme::banner_title(art, plain),
+        theme::block_style(
+            &format!(
+                "{} Flipper Zero :: MIFARE Classic Key Recovery Tool {}",
+                glyph::BANNER_LEFT,
+                glyph::BANNER_RIGHT
+            ),
+            plain,
+        ),
+        format!("{}\n", theme::heavy_rule(plain)),
+    ]
+}
+
+fn render_config(
+    mode: OutputMode,
+    input: &str,
+    output: &str,
+    dict_dir: Option<&str>,
+) -> Vec<String> {
+    let plain = mode.is_plain();
+    if plain {
+        let mut lines = vec![
+            format!("Input file:  {}", input),
+            format!("Output file: {}", output),
+        ];
+        if let Some(d) = dict_dir {
+            lines.push(format!("Dict output dir: {}", d));
+        }
+        lines.push(format!("{}\n", theme::heavy_rule(plain)));
+        return lines;
+    }
+
+    let mut lines = vec![
+        theme::accent(&format!("{} Input file:  {}", glyph::BULLET, input), plain),
+        theme::accent(&format!("{} Output file: {}", glyph::BULLET, output), plain),
+    ];
+    if let Some(d) = dict_dir {
+        lines.push(theme::accent(
+            &format!("{} Dict dir:    {}", glyph::BULLET, d),
+            plain,
+        ));
+    }
+    lines.push(String::new());
+    lines
+}
+
+fn render_nonce_loaded(mode: OutputMode, index: usize, uid: u32, attack_type: &str) -> String {
+    let plain = mode.is_plain();
+    if plain {
+        return format!(
+            "Loaded nonce {}: UID=0x{:08X}, attack={}",
+            index, uid, attack_type
+        );
+    }
+
+    let kind = if attack_type == "static_encrypted" {
+        MessageKind::Warning
+    } else {
+        MessageKind::Success
+    };
+    let tag = theme::colored(&format!("[{}]", attack_type), kind, plain);
+    format!(
+        "{} Loaded nonce {}: UID=0x{:08X} {}",
+        theme::indent(1, glyph::TREE),
+        index,
+        uid,
+        tag
+    )
+}
+
+fn render_loading_complete(mode: OutputMode, total: usize) -> String {
+    let plain = mode.is_plain();
+    if plain {
+        return format!("Total nonces loaded: {}\n", total);
+    }
+    let n = theme::emphasis(&total.to_string(), plain);
+    format!(
+        "{} Total nonces loaded: {}\n",
+        theme::indent(1, glyph::TREE),
+        n
+    )
+}
+
+fn render_hardnested_unsupported(
+    mode: OutputMode,
+    context: Option<&str>,
+    skipping: bool,
+) -> String {
+    let suffix = if skipping { ", skipping." } else { "." };
+    let msg = match context {
+        Some(path) => format!(
+            "HardNested nonces detected in {path} — this attack is not supported (yet){suffix}"
+        ),
+        None => {
+            format!("HardNested nonces detected — this attack is not supported (yet){suffix}")
+        }
+    };
+    theme::colored_bold(&msg, MessageKind::Warning, mode.is_plain())
+}
+
+fn render_hardnested_note(mode: OutputMode, context: Option<&str>) -> String {
+    let msg = match context {
+        Some(path) => format!(
+            "Note: HardNested nonces were also found in {path} and were skipped — that attack is not supported (yet)."
+        ),
+        None => "Note: HardNested nonces were also found in this file and were skipped — that attack is not supported (yet).".to_string(),
+    };
+    theme::colored(&msg, MessageKind::Warning, mode.is_plain())
+}
+
+fn render_start(mode: OutputMode) -> Vec<String> {
+    let plain = mode.is_plain();
+    if plain {
+        return vec!["Starting key recovery... (Press Ctrl+C to stop gracefully.)\n".to_string()];
+    }
+    let msg = theme::block_style(
+        &format!("{} Starting key recovery... ", glyph::BLOCK),
+        plain,
+    );
+    vec![
+        format!("{}(Press Ctrl+C to stop)", msg),
+        theme::light_rule(),
+    ]
+}
+
+fn render_summary(
+    mode: OutputMode,
+    total_nonces: usize,
+    found_keys: usize,
+    candidate_keys: usize,
+) -> Vec<String> {
+    let plain = mode.is_plain();
+    if plain {
+        return vec![
+            format!("\n{}", theme::heavy_rule(plain)),
+            "Key recovery completed!\n".to_string(),
+            "Summary:".to_string(),
+            format!("Total nonces processed: {}", total_nonces),
+            format!("Keys found: {}", found_keys),
+            format!("Candidate keys: {}", candidate_keys),
+        ];
+    }
+
+    let header = format!(
+        "{} Key Recovery Complete! {}",
+        glyph::BLOCK,
+        glyph::BLOCK_END
+    );
+    let kf = format!("{} Keys found: {}", glyph::BULLET, found_keys);
+    let ck = format!("{} Candidate keys: {}", glyph::BULLET, candidate_keys);
+    vec![
+        theme::heavy_rule(plain),
+        theme::block_style(&header, plain),
+        "\nSummary:".to_string(),
+        format!("{} Total nonces processed: {}", glyph::BULLET, total_nonces),
+        theme::colored(&kf, MessageKind::Success, plain),
+        theme::accent(&ck, plain),
+    ]
+}
+
+fn render_found_keys_list(mode: OutputMode, keys: &[MfClassicKey]) -> Vec<String> {
+    if keys.is_empty() {
+        return Vec::new();
+    }
+    let plain = mode.is_plain();
+
+    let mut lines = vec!["\nFound Keys:".to_string()];
+    for k in keys {
+        let hex = k.to_hex();
+        let line = if plain {
+            hex
+        } else {
+            theme::colored(
+                &format!("{} {}", glyph::CHECK, hex),
+                MessageKind::Success,
+                plain,
+            )
+        };
+        lines.push(theme::indent(1, &line));
+    }
+    lines
+}
+
+fn render_saved_files(mode: OutputMode, keys_file: Option<&str>, keys_count: usize) -> Vec<String> {
+    let mut lines = vec!["\nFiles saved:".to_string()];
+    if let Some(f) = keys_file
+        && keys_count > 0
+    {
+        let line = format!("{} {} ({} keys)", glyph::BULLET, f, keys_count);
+        lines.push(theme::indent(
+            1,
+            &theme::colored(&line, MessageKind::Success, mode.is_plain()),
+        ));
+    }
+    lines
+}
+
+fn render_saved_dicts(mode: OutputMode, dicts: &[(String, usize)]) -> Vec<String> {
+    if dicts.is_empty() {
+        return Vec::new();
+    }
+    let plain = mode.is_plain();
+
+    let mut lines = vec![format!("\nCandidate dictionaries ({} files):", dicts.len())];
+    for (path, count) in dicts {
+        let filename = std::path::Path::new(path)
+            .file_name()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_else(|| path.clone());
+        let line = format!("{} {} ({} candidates)", glyph::BULLET, filename, count);
+        lines.push(theme::indent(1, &theme::accent(&line, plain)));
+    }
+    lines
+}
+
+fn render_no_keys_found(mode: OutputMode) -> Vec<String> {
+    let plain = mode.is_plain();
+    if plain {
+        return vec![
+            "No keys were recovered. This could happen if:".to_string(),
+            "  * The nonces are invalid or corrupted".to_string(),
+            "  * The keyspace being searched doesn't contain the key".to_string(),
+            "  * The attack was interrupted before completion\n".to_string(),
+        ];
+    }
+
+    vec![
+        theme::colored(
+            &format!("\n{} No keys were recovered.", glyph::CROSS),
+            MessageKind::Error,
+            plain,
+        ),
+        "\nThis could happen if:".to_string(),
+        format!("  {} The nonces are invalid or corrupted", glyph::DOT),
+        format!(
+            "  {} The keyspace being searched doesn't contain the key",
+            glyph::DOT
+        ),
+        format!(
+            "  {} The attack was interrupted before completion\n",
+            glyph::DOT
+        ),
+    ]
+}
+
+fn render_dict_merge_detail(existing_count: Option<usize>, added: usize) -> String {
+    match existing_count {
+        Some(before) => format!("existing dict has {before} key(s); adding {added} new"),
+        None => "no existing dict on device, creating a new one".to_string(),
+    }
+}
+
 pub struct Ui {
     opts: UiOptions,
     inner: Mutex<UiInner>,
@@ -107,59 +377,19 @@ impl Ui {
 
     pub fn show_title(&self) {
         let plain = self.opts.mode.is_plain();
-        if plain {
-            self.write_line("MIFARE Classic Key Recovery Tool");
-            self.write_line(&theme::heavy_rule(plain));
-            return;
+        if !plain {
+            let term = Term::stdout();
+            let _ = term.clear_screen();
         }
-
-        let term = Term::stdout();
-        let _ = term.clear_screen();
-
-        let art = r#"
-███╗   ███╗███████╗██╗  ██╗███████╗██╗   ██╗
-████╗ ████║██╔════╝██║ ██╔╝██╔════╝╚██╗ ██╔╝
-██╔████╔██║█████╗  █████╔╝ █████╗   ╚████╔╝
-██║╚██╔╝██║██╔══╝  ██╔═██╗ ██╔══╝    ╚██╔╝
-██║ ╚═╝ ██║██║     ██║  ██╗███████╗   ██║
-╚═╝     ╚═╝╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   "#;
-
-        self.write_line(&theme::banner_title(art, plain));
-        self.write_line(&theme::block_style(
-            &format!(
-                "{} Flipper Zero :: MIFARE Classic Key Recovery Tool {}",
-                glyph::BANNER_LEFT,
-                glyph::BANNER_RIGHT
-            ),
-            plain,
-        ));
-        self.write_line(&format!("{}\n", theme::heavy_rule(plain)));
+        for line in render_title(self.opts.mode) {
+            self.write_line(&line);
+        }
     }
 
     pub fn show_config(&self, input: &str, output: &str, dict_dir: Option<&str>) {
-        let plain = self.opts.mode.is_plain();
-        if plain {
-            self.write_line(&format!("Input file:  {}", input));
-            self.write_line(&format!("Output file: {}", output));
-            if let Some(d) = dict_dir {
-                self.write_line(&format!("Dict output dir: {}", d));
-            }
-            self.write_line(&format!("{}\n", theme::heavy_rule(plain)));
-            return;
+        for line in render_config(self.opts.mode, input, output, dict_dir) {
+            self.write_line(&line);
         }
-
-        let lines = [
-            format!("{} Input file:  {}", glyph::BULLET, input),
-            format!("{} Output file: {}", glyph::BULLET, output),
-        ];
-        for l in &lines {
-            self.write_line(&theme::accent(l, plain));
-        }
-        if let Some(d) = dict_dir {
-            let l = format!("{} Dict dir:    {}", glyph::BULLET, d);
-            self.write_line(&theme::accent(&l, plain));
-        }
-        self.write_line("");
     }
 
     pub fn show_loading(&self, filename: &str) {
@@ -286,10 +516,7 @@ impl Ui {
     }
 
     pub fn show_dict_merge_status(&self, existing_count: Option<usize>, added: usize) {
-        let detail = match existing_count {
-            Some(before) => format!("existing dict has {before} key(s); adding {added} new"),
-            None => "no existing dict on device, creating a new one".to_string(),
-        };
+        let detail = render_dict_merge_detail(existing_count, added);
         self.status_detail_line("→", &detail, MessageKind::Info, false);
     }
 
@@ -327,73 +554,28 @@ impl Ui {
     }
 
     pub fn show_nonce_loaded(&self, index: usize, uid: u32, attack_type: &str) {
-        let plain = self.opts.mode.is_plain();
-        if plain {
-            self.write_line(&format!(
-                "Loaded nonce {}: UID=0x{:08X}, attack={}",
-                index, uid, attack_type
-            ));
-            return;
-        }
-
-        let kind = if attack_type == "static_encrypted" {
-            MessageKind::Warning
-        } else {
-            MessageKind::Success
-        };
-        let tag = theme::colored(&format!("[{}]", attack_type), kind, plain);
-        self.write_line(&format!(
-            "{} Loaded nonce {}: UID=0x{:08X} {}",
-            theme::indent(1, glyph::TREE),
+        self.write_line(&render_nonce_loaded(
+            self.opts.mode,
             index,
             uid,
-            tag
+            attack_type,
         ));
     }
 
     pub fn show_loading_complete(&self, total: usize) {
-        let plain = self.opts.mode.is_plain();
-        if plain {
-            self.write_line(&format!("Total nonces loaded: {}\n", total));
-            return;
-        }
-        let n = theme::emphasis(&total.to_string(), plain);
-        self.write_line(&format!(
-            "{} Total nonces loaded: {}\n",
-            theme::indent(1, glyph::TREE),
-            n
-        ));
+        self.write_line(&render_loading_complete(self.opts.mode, total));
     }
 
     pub fn show_hardnested_unsupported(&self, context: Option<&str>, skipping: bool) {
-        let suffix = if skipping { ", skipping." } else { "." };
-        let msg = match context {
-            Some(path) => format!(
-                "HardNested nonces detected in {path} — this attack is not supported (yet){suffix}"
-            ),
-            None => {
-                format!("HardNested nonces detected — this attack is not supported (yet){suffix}")
-            }
-        };
-        self.write_err_line(&theme::colored_bold(
-            &msg,
-            MessageKind::Warning,
-            self.opts.mode.is_plain(),
+        self.write_err_line(&render_hardnested_unsupported(
+            self.opts.mode,
+            context,
+            skipping,
         ));
     }
 
     pub fn show_hardnested_note(&self, context: Option<&str>) {
-        let msg = match context {
-            Some(path) => format!(
-                "Note: HardNested nonces were also found in {path} and were skipped — that attack is not supported (yet)."
-            ),
-            None => "Note: HardNested nonces were also found in this file and were skipped — that attack is not supported (yet).".to_string(),
-        };
-        self.write_line(&theme::colored(
-            &msg,
-            MessageKind::Warning,
-            self.opts.mode.is_plain(),
-        ));
+        self.write_line(&render_hardnested_note(self.opts.mode, context));
     }
 
     pub fn show_error(&self, text: &str) {
@@ -413,17 +595,9 @@ impl Ui {
     }
 
     pub fn show_start(&self) {
-        let plain = self.opts.mode.is_plain();
-        if plain {
-            self.write_line("Starting key recovery... (Press Ctrl+C to stop gracefully.)\n");
-            return;
+        for line in render_start(self.opts.mode) {
+            self.write_line(&line);
         }
-        let msg = theme::block_style(
-            &format!("{} Starting key recovery... ", glyph::BLOCK),
-            plain,
-        );
-        self.write_line(&format!("{}(Press Ctrl+C to stop)", msg));
-        self.write_line(&theme::light_rule());
     }
 
     pub fn begin_progress(&self, total_nonces: usize) {
@@ -513,119 +687,33 @@ impl Ui {
 
     pub fn show_summary(&self, total_nonces: usize, found_keys: usize, candidate_keys: usize) {
         self.clear_progress();
-        let plain = self.opts.mode.is_plain();
-
-        if plain {
-            self.write_line(&format!("\n{}", theme::heavy_rule(plain)));
-            self.write_line("Key recovery completed!\n");
-            self.write_line("Summary:");
-            self.write_line(&format!("Total nonces processed: {}", total_nonces));
-            self.write_line(&format!("Keys found: {}", found_keys));
-            self.write_line(&format!("Candidate keys: {}", candidate_keys));
-            return;
+        for line in render_summary(self.opts.mode, total_nonces, found_keys, candidate_keys) {
+            self.write_line(&line);
         }
-
-        self.write_line(&theme::heavy_rule(plain));
-        let header = format!(
-            "{} Key Recovery Complete! {}",
-            glyph::BLOCK,
-            glyph::BLOCK_END
-        );
-        self.write_line(&theme::block_style(&header, plain));
-
-        self.write_line("\nSummary:");
-        self.write_line(&format!(
-            "{} Total nonces processed: {}",
-            glyph::BULLET,
-            total_nonces
-        ));
-
-        let kf = format!("{} Keys found: {}", glyph::BULLET, found_keys);
-        let ck = format!("{} Candidate keys: {}", glyph::BULLET, candidate_keys);
-        self.write_line(&theme::colored(&kf, MessageKind::Success, plain));
-        self.write_line(&theme::accent(&ck, plain));
     }
 
     pub fn show_found_keys_list(&self, keys: &[MfClassicKey]) {
-        if keys.is_empty() {
-            return;
-        }
-        let plain = self.opts.mode.is_plain();
-
-        self.write_line("\nFound Keys:");
-        for k in keys {
-            let hex = k.to_hex();
-            let line = if plain {
-                hex
-            } else {
-                theme::colored(
-                    &format!("{} {}", glyph::CHECK, hex),
-                    MessageKind::Success,
-                    plain,
-                )
-            };
-            self.write_line(&theme::indent(1, &line));
+        for line in render_found_keys_list(self.opts.mode, keys) {
+            self.write_line(&line);
         }
     }
 
     pub fn show_saved_files(&self, keys_file: Option<&str>, keys_count: usize) {
-        self.write_line("\nFiles saved:");
-        if let Some(f) = keys_file
-            && keys_count > 0
-        {
-            let line = format!("{} {} ({} keys)", glyph::BULLET, f, keys_count);
-            self.write_line(&theme::indent(
-                1,
-                &theme::colored(&line, MessageKind::Success, self.opts.mode.is_plain()),
-            ));
+        for line in render_saved_files(self.opts.mode, keys_file, keys_count) {
+            self.write_line(&line);
         }
     }
 
     pub fn show_saved_dicts(&self, dicts: &[(String, usize)]) {
-        if dicts.is_empty() {
-            return;
-        }
-        let plain = self.opts.mode.is_plain();
-
-        self.write_line(&format!(
-            "\nCandidate dictionaries ({} files):",
-            dicts.len()
-        ));
-        for (path, count) in dicts {
-            let filename = std::path::Path::new(path)
-                .file_name()
-                .map(|s| s.to_string_lossy().to_string())
-                .unwrap_or_else(|| path.clone());
-            let line = format!("{} {} ({} candidates)", glyph::BULLET, filename, count);
-            self.write_line(&theme::indent(1, &theme::accent(&line, plain)));
+        for line in render_saved_dicts(self.opts.mode, dicts) {
+            self.write_line(&line);
         }
     }
 
     pub fn show_no_keys_found(&self) {
-        let plain = self.opts.mode.is_plain();
-        if plain {
-            self.write_line("No keys were recovered. This could happen if:");
-            self.write_line("  * The nonces are invalid or corrupted");
-            self.write_line("  * The keyspace being searched doesn't contain the key");
-            self.write_line("  * The attack was interrupted before completion\n");
-            return;
+        for line in render_no_keys_found(self.opts.mode) {
+            self.write_line(&line);
         }
-
-        let line = format!("\n{} No keys were recovered.", glyph::CROSS);
-        self.write_line(&theme::colored(&line, MessageKind::Error, plain));
-        self.write_line("\nThis could happen if:");
-        self.write_line(&format!(
-            "  {} The nonces are invalid or corrupted",
-            glyph::DOT
-        ));
-        self.write_line(&format!(
-            "  {} The keyspace being searched doesn't contain the key",
-            glyph::DOT
-        ));
-        self.write_line(&format!(
-            "  {} The attack was interrupted before completion\n",
-            glyph::DOT
-        ));
     }
 
     pub fn show_disclaimer(&self, text: &str) {
@@ -680,5 +768,235 @@ impl Ui {
                 _ => println!("Invalid answer, please type y or n."),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::model::MfClassicKey;
+
+    fn key(bytes: [u8; 6]) -> MfClassicKey {
+        MfClassicKey::from_slice(&bytes)
+    }
+
+    fn force_color() {
+        colored::control::set_override(true);
+    }
+
+    #[test]
+    fn title_plain_has_no_ansi_and_no_art() {
+        let lines = render_title(OutputMode::Plain);
+        assert_eq!(lines[0], "MIFARE Classic Key Recovery Tool");
+        for line in &lines {
+            assert!(
+                !line.contains('\x1b'),
+                "plain output must have no ANSI codes: {line:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn title_fancy_contains_subtitle_and_ansi() {
+        force_color();
+        let lines = render_title(OutputMode::Fancy);
+        assert!(lines.iter().any(|l| l.contains("Flipper Zero")));
+        assert!(
+            lines.iter().any(|l| l.contains('\x1b')),
+            "fancy output should be colored"
+        );
+    }
+
+    #[test]
+    fn config_plain_has_exact_labels_no_dict_dir() {
+        let lines = render_config(OutputMode::Plain, "in.log", "out.txt", None);
+        assert_eq!(lines[0], "Input file:  in.log");
+        assert_eq!(lines[1], "Output file: out.txt");
+        assert!(lines.iter().all(|l| !l.contains('\x1b')));
+        assert!(!lines.iter().any(|l| l.contains("Dict")));
+    }
+
+    #[test]
+    fn config_plain_includes_dict_dir_when_given() {
+        let lines = render_config(OutputMode::Plain, "in.log", "out.txt", Some("dicts/"));
+        assert!(lines.iter().any(|l| l == "Dict output dir: dicts/"));
+    }
+
+    #[test]
+    fn config_fancy_uses_bullet_glyph() {
+        let lines = render_config(OutputMode::Fancy, "in.log", "out.txt", None);
+        assert!(lines[0].contains(glyph::BULLET));
+        assert!(lines[0].contains("in.log"));
+    }
+
+    #[test]
+    fn nonce_loaded_plain_has_no_tag() {
+        let line = render_nonce_loaded(OutputMode::Plain, 3, 0xDEADBEEF, "mfkey32");
+        assert_eq!(line, "Loaded nonce 3: UID=0xDEADBEEF, attack=mfkey32");
+    }
+
+    #[test]
+    fn nonce_loaded_fancy_tags_static_encrypted_differently() {
+        force_color();
+        let normal = render_nonce_loaded(OutputMode::Fancy, 0, 1, "mfkey32");
+        let static_enc = render_nonce_loaded(OutputMode::Fancy, 0, 1, "static_encrypted");
+        assert!(normal.contains('\x1b'));
+        assert!(static_enc.contains('\x1b'));
+        assert_ne!(normal, static_enc);
+    }
+
+    #[test]
+    fn loading_complete_plain_matches_exact_text() {
+        assert_eq!(
+            render_loading_complete(OutputMode::Plain, 42),
+            "Total nonces loaded: 42\n"
+        );
+    }
+
+    #[test]
+    fn hardnested_unsupported_mentions_path_and_skip_suffix() {
+        let msg = render_hardnested_unsupported(OutputMode::Plain, Some("a.log"), true);
+        assert!(msg.contains("a.log"));
+        assert!(msg.ends_with(", skipping."));
+
+        let msg_no_skip = render_hardnested_unsupported(OutputMode::Plain, None, false);
+        assert!(!msg_no_skip.contains("a.log"));
+        assert!(msg_no_skip.ends_with("(yet)."));
+    }
+
+    #[test]
+    fn hardnested_note_mentions_path_when_given() {
+        let msg = render_hardnested_note(OutputMode::Plain, Some("b.log"));
+        assert!(msg.contains("b.log"));
+        let msg_none = render_hardnested_note(OutputMode::Plain, None);
+        assert!(msg_none.contains("this file"));
+    }
+
+    #[test]
+    fn start_plain_is_single_line() {
+        let lines = render_start(OutputMode::Plain);
+        assert_eq!(lines.len(), 1);
+        assert!(lines[0].contains("Ctrl+C to stop gracefully"));
+    }
+
+    #[test]
+    fn start_fancy_has_two_lines_with_rule() {
+        let lines = render_start(OutputMode::Fancy);
+        assert_eq!(lines.len(), 2);
+        assert!(lines[1].chars().all(|c| c == '─'));
+    }
+
+    #[test]
+    fn summary_plain_matches_exact_counts() {
+        let lines = render_summary(OutputMode::Plain, 10, 2, 5);
+        assert!(lines.iter().any(|l| l == "Total nonces processed: 10"));
+        assert!(lines.iter().any(|l| l == "Keys found: 2"));
+        assert!(lines.iter().any(|l| l == "Candidate keys: 5"));
+    }
+
+    #[test]
+    fn summary_fancy_and_plain_have_same_line_count() {
+        assert_eq!(
+            render_summary(OutputMode::Fancy, 10, 2, 5).len(),
+            render_summary(OutputMode::Plain, 10, 2, 5).len()
+        );
+    }
+
+    #[test]
+    fn found_keys_list_empty_is_empty() {
+        assert!(render_found_keys_list(OutputMode::Plain, &[]).is_empty());
+        assert!(render_found_keys_list(OutputMode::Fancy, &[]).is_empty());
+    }
+
+    #[test]
+    fn found_keys_list_plain_shows_hex_no_ansi() {
+        let keys = [key([0xFF; 6])];
+        let lines = render_found_keys_list(OutputMode::Plain, &keys);
+        assert_eq!(lines.len(), 2);
+        assert!(lines[1].contains("FFFFFFFFFFFF"));
+        assert!(!lines[1].contains('\x1b'));
+    }
+
+    #[test]
+    fn saved_files_always_has_header_even_when_empty() {
+        let lines = render_saved_files(OutputMode::Plain, None, 0);
+        assert_eq!(lines, vec!["\nFiles saved:".to_string()]);
+    }
+
+    #[test]
+    fn saved_files_adds_line_when_present_and_nonzero() {
+        let lines = render_saved_files(OutputMode::Plain, Some("keys.txt"), 3);
+        assert_eq!(lines.len(), 2);
+        assert!(lines[1].contains("keys.txt"));
+        assert!(lines[1].contains('3'));
+    }
+
+    #[test]
+    fn saved_files_skips_line_when_count_zero() {
+        let lines = render_saved_files(OutputMode::Plain, Some("keys.txt"), 0);
+        assert_eq!(lines.len(), 1);
+    }
+
+    #[test]
+    fn saved_dicts_empty_is_empty() {
+        assert!(render_saved_dicts(OutputMode::Plain, &[]).is_empty());
+    }
+
+    #[test]
+    fn saved_dicts_uses_file_name_only() {
+        let dicts = vec![("/some/path/dict.txt".to_string(), 7usize)];
+        let lines = render_saved_dicts(OutputMode::Plain, &dicts);
+        assert_eq!(lines.len(), 2);
+        assert!(lines[1].contains("dict.txt"));
+        assert!(!lines[1].contains("/some/path"));
+    }
+
+    #[test]
+    fn no_keys_found_plain_has_four_lines() {
+        let lines = render_no_keys_found(OutputMode::Plain);
+        assert_eq!(lines.len(), 4);
+        assert!(lines.iter().all(|l| !l.contains('\x1b')));
+    }
+
+    #[test]
+    fn no_keys_found_fancy_has_five_lines_with_ansi() {
+        force_color();
+        let lines = render_no_keys_found(OutputMode::Fancy);
+        assert_eq!(lines.len(), 5);
+        assert!(lines.iter().any(|l| l.contains('\x1b')));
+    }
+
+    #[test]
+    fn dict_merge_detail_reports_existing_count() {
+        assert_eq!(
+            render_dict_merge_detail(Some(4), 2),
+            "existing dict has 4 key(s); adding 2 new"
+        );
+    }
+
+    #[test]
+    fn dict_merge_detail_reports_no_existing_dict() {
+        assert_eq!(
+            render_dict_merge_detail(None, 5),
+            "no existing dict on device, creating a new one"
+        );
+    }
+
+    #[test]
+    fn progress_pct_handles_zero_total() {
+        let p = Progress {
+            current: 3,
+            total: 0,
+        };
+        assert_eq!(p.pct(), 0.0);
+    }
+
+    #[test]
+    fn progress_pct_computes_fraction() {
+        let p = Progress {
+            current: 1,
+            total: 4,
+        };
+        assert_eq!(p.pct(), 25.0);
     }
 }
