@@ -9,7 +9,7 @@
 - Delete auto-mode logs only after a successful attack, with confirmation
 - Add unit tests for core::parser (line classification, mfkey32/static_nested/static_encrypted/HardNested, load_nested_nonces)
 - Auto-detect NO_COLOR and non-interactive stdout, forcing plain output even without --plain
-- Add unit tests for ui::render_* formatting functions and ui::theme's style primitives
+- Add unit tests for ui::render\_\* formatting functions and ui::theme's style primitives
 
 ### Updated
 
@@ -26,7 +26,7 @@
 - Route every Ui line through a shared write_line/write_err_line so an active progress bar can no longer be corrupted by interleaved output
 - Unify --plain and colored progress reporting on a single indicatif ProgressBar instead of a hand-rolled \r print in --plain mode
 - Replace UiOptions' bool plain_ui with an OutputMode enum (Fancy/Plain), leaving room for a future Json mode
-- Extract Ui's formatting logic into pure render_* functions, separate from the methods that print them
+- Extract Ui's formatting logic into pure render\_\* functions, separate from the methods that print them
 
 ### Fixed
 
