@@ -8,7 +8,7 @@ use crate::ui::Ui;
 use crate::params::AutoParams;
 use std::collections::BTreeSet;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -19,14 +19,17 @@ fn is_target_log(name: &str) -> bool {
     lower.ends_with(".mfkey32.log") || lower.ends_with(".nested.log")
 }
 
-pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<()> {
+fn resolve_logs_dir(params: &AutoParams) -> Rslt<PathBuf> {
     let base: PathBuf = match params.out_dir.as_deref() {
         Some(p) => p.to_path_buf(),
         None => std::env::current_dir().context("cwd error")?,
     };
     let logs_dir = base.join("mfkey_auto_data");
     fs::create_dir_all(&logs_dir).with_context(|| format!("cannot create {logs_dir:?}"))?;
+    Ok(logs_dir)
+}
 
+fn discover_port(ui: &Ui, params: &AutoParams) -> Rslt<String> {
     let port = match params.port.as_deref() {
         Some(p) => p.to_string(),
         None => {
@@ -40,11 +43,14 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
         }
     };
     ui.show_flipper_port(&port);
+    Ok(port)
+}
 
-    ui.show_opening_session();
-    let mut sess = FlipperSession::open(&port).context("cannot open RPC session")?;
-    ui.show_session_ready();
-
+fn download_target_logs(
+    ui: &Ui,
+    sess: &mut FlipperSession,
+    logs_dir: &Path,
+) -> Rslt<(Vec<PathBuf>, Vec<String>)> {
     ui.show_listing_dir(NFC_DIR);
     let entries = sess
         .storage_list(NFC_DIR)
@@ -58,7 +64,7 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
 
     if targets.is_empty() {
         ui.show_no_logs_found(NFC_DIR);
-        return Ok(());
+        return Ok((Vec::new(), Vec::new()));
     }
     ui.show_logs_found(&targets);
 
@@ -79,12 +85,19 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
         remote_logs.push(remote);
     }
 
-    ui.show_running_attack();
+    Ok((local_logs, remote_logs))
+}
 
+fn run_attacks_over_logs(
+    ui: &Arc<Ui>,
+    stop: &Arc<AtomicBool>,
+    local_logs: &[PathBuf],
+    logs_dir: &Path,
+) -> (BTreeSet<String>, Vec<PathBuf>) {
     let mut all_keys: BTreeSet<String> = BTreeSet::new();
     let mut local_dicts: Vec<PathBuf> = Vec::new();
 
-    for log in &local_logs {
+    for log in local_logs {
         if stop.load(Ordering::SeqCst) {
             break;
         }
@@ -93,8 +106,8 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
         let dict_dir = logs_dir.to_string_lossy().to_string();
 
         let outcome = match attack_runner::run_file_attack(
-            &ui,
-            &stop,
+            ui,
+            stop,
             &log_str,
             Some(dict_dir.as_str()),
             Some(&log_str),
@@ -127,19 +140,42 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
         }
     }
 
+    (all_keys, local_dicts)
+}
+
+fn maybe_delete_remote_logs(ui: &Ui, sess: &mut FlipperSession, remote_logs: &[String]) {
+    let should_delete = ui.confirm("Delete the original log files from the Flipper?", false);
+    if should_delete {
+        for remote in remote_logs {
+            ui.show_deleting_from_device(remote);
+            if let Err(e) = sess.storage_delete(remote, false) {
+                ui.show_error(&format!("warning: failed to delete {remote}: {e}"));
+            }
+        }
+    }
+}
+
+pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<()> {
+    let logs_dir = resolve_logs_dir(&params)?;
+    let port = discover_port(&ui, &params)?;
+
+    ui.show_opening_session();
+    let mut sess = FlipperSession::open(&port).context("cannot open RPC session")?;
+    ui.show_session_ready();
+
+    let (local_logs, remote_logs) = download_target_logs(&ui, &mut sess, &logs_dir)?;
+    if local_logs.is_empty() {
+        return Ok(());
+    }
+
+    ui.show_running_attack();
+    let (all_keys, local_dicts) = run_attacks_over_logs(&ui, &stop, &local_logs, &logs_dir);
+
     upload::upload_dicts(&ui, &mut sess, &local_dicts);
     upload::merge_and_upload_keys(&ui, &mut sess, &all_keys, &logs_dir)?;
 
     if !all_keys.is_empty() {
-        let should_delete = ui.confirm("Delete the original log files from the Flipper?", false);
-        if should_delete {
-            for remote in &remote_logs {
-                ui.show_deleting_from_device(remote);
-                if let Err(e) = sess.storage_delete(remote, false) {
-                    ui.show_error(&format!("warning: failed to delete {remote}: {e}"));
-                }
-            }
-        }
+        maybe_delete_remote_logs(&ui, &mut sess, &remote_logs);
     }
 
     Ok(())

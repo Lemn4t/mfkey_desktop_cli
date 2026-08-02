@@ -1,13 +1,13 @@
 use crate::core::attack_runner::{self, FileAttackOutcome};
 use crate::core::model::save_keys_to_file;
 use crate::core::paths::display_path;
+use crate::ext::result::Rslt;
 use crate::params::RunParams;
 use crate::ui::Ui;
-use std::process;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-pub fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) {
+pub fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) -> Rslt<()> {
     ui.show_config(
         &params.input_file,
         &params.output_file,
@@ -28,7 +28,7 @@ pub fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) {
                 "Failed to open file: {} ({})",
                 params.input_file, e
             ));
-            process::exit(1);
+            return Err(e);
         }
     };
 
@@ -39,7 +39,7 @@ pub fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) {
             if !hardnested_detected {
                 ui.show_error("Failed to load nonces from file!");
             }
-            process::exit(1);
+            return Err("no usable nonces".into());
         }
         FileAttackOutcome::Ran(r) => r,
     };
@@ -97,4 +97,6 @@ pub fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) {
             }
         }
     }
+
+    Ok(())
 }

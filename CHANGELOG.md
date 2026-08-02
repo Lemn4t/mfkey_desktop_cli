@@ -35,6 +35,8 @@
 - Deduplicate Flipper port discovery by having find_flipper_port reuse find_all_flipper_ports instead of a second copy of the scan loop
 - Remove the unused storage_exists RPC helper
 - Migrate FlipperError to a thiserror-derived enum, dropping the hand-written Display/Error/From impls while keeping the exact same error messages
+- Make run() return Rslt<()> and centralize its exit-code handling in main, matching the --auto arm instead of calling process::exit inline
+- Decompose the ~125-line run_auto into focused helpers (resolve_logs_dir, discover_port, download_target_logs, run_attacks_over_logs, maybe_delete_remote_logs)
 
 ### Fixed
 

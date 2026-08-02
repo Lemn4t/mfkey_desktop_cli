@@ -47,6 +47,9 @@ fn main() {
                 process::exit(1);
             }
         },
-        Params::Run(params) => run::run(ui, params, stop),
+        Params::Run(params) => match run::run(ui, params, stop) {
+            Ok(()) => process::exit(0),
+            Err(_) => process::exit(1),
+        },
     }
 }
