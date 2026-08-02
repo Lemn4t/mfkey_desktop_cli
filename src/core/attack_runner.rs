@@ -51,7 +51,7 @@ pub fn run_file_attack(
     }
     ui.show_start();
 
-    let mut attack_state = AttackState::new(Arc::clone(ui), Arc::clone(stop), nonces.len());
+    let mut attack_state = AttackState::new(Arc::clone(ui), Arc::clone(stop));
 
     let mut save_dict = |uid: u32,
                          keys: &[(u8, MfClassicKey)],

@@ -14,18 +14,12 @@ fn looks_like_flipper(info: &UsbPortInfo) -> bool {
 }
 
 pub fn find_flipper_port() -> Result<String> {
-    let ports = serialport::available_ports()?;
-    for p in ports {
-        if let SerialPortType::UsbPort(usb) = &p.port_type
-            && looks_like_flipper(usb)
-        {
-            return Ok(p.port_name);
-        }
-    }
-    Err(FlipperError::NotFound)
+    find_all_flipper_ports()?
+        .into_iter()
+        .next()
+        .ok_or(FlipperError::NotFound)
 }
 
-#[allow(dead_code)]
 pub fn find_all_flipper_ports() -> Result<Vec<String>> {
     let ports = serialport::available_ports()?;
     let mut out = Vec::new();

@@ -51,7 +51,6 @@ pub fn resolve_output_mode(requested_plain: bool) -> OutputMode {
 
 struct UiInner {
     bar: Option<ProgressBar>,
-    total_nonces: usize,
 }
 
 struct Progress {
@@ -109,10 +108,7 @@ impl Ui {
     pub fn new(opts: UiOptions) -> Self {
         Ui {
             opts,
-            inner: Mutex::new(UiInner {
-                bar: None,
-                total_nonces: 0,
-            }),
+            inner: Mutex::new(UiInner { bar: None }),
         }
     }
 
@@ -192,7 +188,6 @@ impl Ui {
 
     pub fn begin_progress(&self, total_nonces: usize) {
         let mut inner = self.inner.lock().unwrap();
-        inner.total_nonces = total_nonces;
         if inner.bar.is_some() {
             return;
         }
@@ -261,7 +256,6 @@ impl Ui {
         if let Some(pb) = inner.bar.take() {
             pb.finish_and_clear();
         }
-        inner.total_nonces = 0;
     }
 
     pub fn show_disclaimer(&self, text: &str) {

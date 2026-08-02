@@ -4,11 +4,9 @@ use crate::{pb, pb_storage};
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct DirEntry {
     pub name: String,
     pub is_dir: bool,
-    pub size: u32,
 }
 
 impl FlipperSession {
@@ -29,7 +27,6 @@ impl FlipperSession {
                     out.push(DirEntry {
                         name: f.name,
                         is_dir: f.r#type == 1,
-                        size: f.size,
                     });
                 }
             }
@@ -123,16 +120,5 @@ impl FlipperSession {
             Duration::from_secs(10),
         )?;
         Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub fn storage_exists(&mut self, path: &str) -> Result<bool> {
-        let (dir, name) = match path.rfind('/') {
-            Some(i) => (&path[..i], &path[i + 1..]),
-            None => ("/", path),
-        };
-        let dir = if dir.is_empty() { "/" } else { dir };
-        let entries = self.storage_list(dir)?;
-        Ok(entries.iter().any(|e| e.name == name))
     }
 }

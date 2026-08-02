@@ -83,7 +83,7 @@ struct TaskResult {
     candidates: Vec<(u8, MfClassicKey)>,
 }
 
-fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32, uid: u32) -> TaskResult {
+fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32) -> TaskResult {
     if ctx.should_stop() {
         return TaskResult {
             found: Vec::new(),
@@ -92,7 +92,6 @@ fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32, uid: u32)
     }
 
     let mut ts = TaskState::new(ctx);
-    ts.current_uid = uid;
 
     let c_nonce: CNonce = nonce.to_c();
     let cb = make_callbacks(&mut ts);
@@ -125,7 +124,7 @@ fn run_pass(
         .filter(|n| n.attack == attack_type)
         .map(|nonce| {
             let (ks2, in_) = derive_ks(nonce);
-            process_one(ctx, nonce, ks2, in_, nonce.uid)
+            process_one(ctx, nonce, ks2, in_)
         })
         .collect();
 
@@ -184,7 +183,7 @@ pub fn run_attack(
             .map(|nonce| {
                 let ks_enc = nonce.ks1_1_enc;
                 let nt_xor_uid = nonce.uid_xor_nt0;
-                process_one(&ctx, nonce, ks_enc, nt_xor_uid, uid)
+                process_one(&ctx, nonce, ks_enc, nt_xor_uid)
             })
             .collect();
 

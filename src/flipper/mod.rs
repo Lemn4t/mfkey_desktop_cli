@@ -6,9 +6,6 @@ pub mod transport;
 
 pub use session::FlipperSession;
 
-#[allow(unused_imports)]
-pub use find::{find_all_flipper_ports, find_flipper_port};
-
 use std::fmt;
 
 #[derive(Debug)]

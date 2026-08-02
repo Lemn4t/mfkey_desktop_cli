@@ -31,6 +31,9 @@
 - Extract src/run.rs for the single-file mode's orchestration, moving save_keys_to_file into core::model and display_path into core::paths, leaving main.rs as a thin entry point
 - Extract a shared accumulate() helper in core::state, replacing four hand-rolled copies of the same insert-if-new bookkeeping in TaskState/AttackState
 - Unify the Mfkey32 and StaticNested attack passes in engine::run_attack behind a shared run_pass() helper, leaving the StaticEncrypted pass untouched
+- Remove dead fields and unused parameters (TaskState.current_uid, AttackState::new's ignored nonce-count argument, UiInner.total_nonces, DirEntry.size)
+- Deduplicate Flipper port discovery by having find_flipper_port reuse find_all_flipper_ports instead of a second copy of the scan loop
+- Remove the unused storage_exists RPC helper
 
 ### Fixed
 
@@ -42,6 +45,7 @@
 - Rewrite the disclaimer flow to use Ui instead of its own duplicated color/prompt logic, fixing a nested-ANSI-color rendering bug in the "pill taken" message
 - Show disclaimer and tool's title in main
 - Only pass -fno-plt on Linux, avoiding a harmless but noisy "argument unused" warning on macOS builds
+- Return a dedicated FlipperError::Encode on protobuf encode failure instead of mislabeling it as a generic protocol error
 
 ## [1.0.5] - 2026-07-18
 

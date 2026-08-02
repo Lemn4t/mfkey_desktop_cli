@@ -37,7 +37,7 @@ pub fn read_message(t: &mut Transport, timeout: Duration) -> Result<pb::Main> {
 pub fn write_message(t: &mut Transport, msg: &pb::Main) -> Result<()> {
     let mut buf = Vec::with_capacity(msg.encoded_len() + 8);
     msg.encode_length_delimited(&mut buf)
-        .map_err(|e| FlipperError::Protocol(format!("encode error: {e}")))?;
+        .map_err(FlipperError::Encode)?;
     t.write_all(&buf)?;
     Ok(())
 }

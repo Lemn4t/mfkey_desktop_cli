@@ -54,7 +54,6 @@ pub struct TaskState<'ctx> {
 
     pub ctx: &'ctx AttackContext,
     pub total_nonces: usize,
-    pub current_uid: u32,
 }
 
 impl<'ctx> TaskState<'ctx> {
@@ -66,7 +65,6 @@ impl<'ctx> TaskState<'ctx> {
             candidate_set: HashSet::new(),
             total_nonces: ctx.total_nonces,
             ctx,
-            current_uid: 0,
         }
     }
 
@@ -100,7 +98,7 @@ pub struct AttackState {
 }
 
 impl AttackState {
-    pub fn new(ui: Arc<Ui>, stop: Arc<AtomicBool>, _total_nonces: usize) -> Self {
+    pub fn new(ui: Arc<Ui>, stop: Arc<AtomicBool>) -> Self {
         AttackState {
             found_keys: Vec::new(),
             found_set: HashSet::new(),
