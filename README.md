@@ -152,7 +152,7 @@ cargo build --release
 The binary will be in `target/release/`.
 
 > [!NOTE]
-> Flipper RPC protobuf definitions are compiled at build time using the pure-Rust [`protox`](https://crates.io/crates/protox) parser — a system-wide `protoc` install is not required.
+> Flipper RPC protobuf definitions are compiled at build time with [`prost-build`](https://crates.io/crates/prost-build), using a `protoc` binary bundled via [`protoc-bin-vendored`](https://crates.io/crates/protoc-bin-vendored) — a system-wide `protoc` install is not required.
 
 ---
 

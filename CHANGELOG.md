@@ -58,6 +58,7 @@
 - Only pass -fno-plt on Linux, avoiding a harmless but noisy "argument unused" warning on macOS builds
 - Return a dedicated FlipperError::Encode on protobuf encode failure instead of mislabeling it as a generic protocol error
 - Return Option from config_path and handle a missing home/config directory gracefully instead of panicking (the config simply isn't persisted)
+- Correct the README build note: protobuf definitions are compiled with prost-build and a vendored protoc (protoc-bin-vendored), not the pure-Rust protox parser
 
 ## [1.0.5] - 2026-07-18
 
