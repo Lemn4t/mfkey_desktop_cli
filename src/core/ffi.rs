@@ -77,6 +77,6 @@ pub struct CCallbacks {
 }
 
 unsafe extern "C" {
-    pub fn crypto1_recover(n: *const CNonce, ks2: u32, in_: u32, cb: *const CCallbacks) -> bool;
-    pub fn crypto1_prng_successor(x: u32, n: u32) -> u32;
+    pub fn crapto1_recover(n: *const CNonce, ks2: u32, in_: u32, cb: *const CCallbacks) -> bool;
+    pub fn crapto1_prng_successor(x: u32, n: u32) -> u32;
 }

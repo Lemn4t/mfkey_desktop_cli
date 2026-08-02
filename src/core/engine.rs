@@ -1,4 +1,4 @@
-use crate::core::ffi::{AttackType, CCallbacks, CNonce, MF_CLASSIC_KEY_SIZE, crypto1_recover};
+use crate::core::ffi::{AttackType, CCallbacks, CNonce, MF_CLASSIC_KEY_SIZE, crapto1_recover};
 use crate::core::model::{MfClassicKey, Nonce};
 use crate::core::state::{AttackContext, AttackState, TaskState};
 use rayon::prelude::*;
@@ -96,7 +96,7 @@ fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32) -> TaskRe
     let c_nonce: CNonce = nonce.to_c();
     let cb = make_callbacks(&mut ts);
     unsafe {
-        crypto1_recover(
+        crapto1_recover(
             &c_nonce as *const CNonce,
             ks2,
             in_,

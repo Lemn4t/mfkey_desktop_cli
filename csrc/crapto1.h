@@ -1,5 +1,5 @@
-#ifndef CRYPTO1_H
-#define CRYPTO1_H
+#ifndef CRAPTO1_H
+#define CRAPTO1_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -67,12 +67,12 @@ typedef struct {
   void *user;
 } CCallbacks;
 
-bool crypto1_recover(const CNonce *n, uint32_t ks2, uint32_t in, const CCallbacks *cb);
+bool crapto1_recover(const CNonce *n, uint32_t ks2, uint32_t in, const CCallbacks *cb);
 
-uint32_t crypto1_prng_successor(uint32_t x, uint32_t n);
+uint32_t crapto1_prng_successor(uint32_t x, uint32_t n);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // CRYPTO1_H
+#endif // CRAPTO1_H

@@ -11,7 +11,7 @@ fn main() {
     println!("cargo:rerun-if-env-changed=MFKEY_NATIVE");
 
     let mut build = cc::Build::new();
-    build.file("csrc/crypto1.c");
+    build.file("csrc/crapto1.c");
     build.include("csrc");
 
     if target_env == "msvc" {
@@ -41,10 +41,10 @@ fn main() {
         }
     }
 
-    build.compile("crypto1");
+    build.compile("crapto1");
 
-    println!("cargo:rerun-if-changed=csrc/crypto1.c");
-    println!("cargo:rerun-if-changed=csrc/crypto1.h");
+    println!("cargo:rerun-if-changed=csrc/crapto1.c");
+    println!("cargo:rerun-if-changed=csrc/crapto1.h");
     println!("cargo:rerun-if-changed=csrc/parity.h");
 
     let protoc = protoc_bin_vendored::protoc_bin_path()

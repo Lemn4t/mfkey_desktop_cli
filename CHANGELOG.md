@@ -19,8 +19,8 @@
 - Group StaticEncrypted nonces by UID in one pass instead of O(n²)
 - Move generated protobuf module declarations out of main.rs into src/generated_pb.rs
 - Unify error handling around a shared Rslt<T> (Box<dyn Error>) with context, instead of ad hoc Strings and a typed error that got stringified at the auto/ boundary
-- Throttle the should_stop poll in the crypto1 MSB search loop from every iteration to every 4096
-- Replace crypto1_recover's per-nonce malloc/free scratch buffers with reusable thread-local storage
+- Throttle the should_stop poll in the crapto1 MSB search loop from every iteration to every 4096
+- Replace crapto1_recover's per-nonce malloc/free scratch buffers with reusable thread-local storage
 - Stop deriving serde::Serialize/Deserialize on every generated protobuf type; nothing used it outside core::config::Config
 - Introduce a MessageKind enum so status colors are mapped in one place instead of scattered Color:: literals in auto/mod.rs and auto/upload.rs
 - Extract src/ui/theme.rs for separators, glyphs, and style roles, removing dead colored()-branches left over from earlier Ui refactors
@@ -48,6 +48,7 @@
 - Route the --auto report's status glyphs through theme::glyph and omit them in plain mode, matching the attack report's glyph-free plain output
 - Extract pure varint encode/decode helpers in flipper::framing and pure key-merge helpers (parse_existing_keys, merge_key_sets) in auto::upload so both become unit-testable without a device; the wire format and upload behavior are unchanged
 - Deduplicate the timeout-polling read loop in flipper::transport behind a shared poll_read helper, reused by read_u8, read_exact, and the start_rpc_session echo scan
+- Rename the bundled C recovery library and all its symbols from crypto1 to crapto1 (csrc/crapto1.{c,h}, the CRAPTO1_H guard, Crapto1State, crapto1_recover/crapto1_prng_successor, and the internal crapto1_bit/crapto1_get_lfsr helpers), matching the crapto1 cracking library it is based on; the Crypto-1 cipher keeps its name
 
 ### Fixed
 
