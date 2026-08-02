@@ -113,6 +113,27 @@ fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32, uid: u32)
     }
 }
 
+fn run_pass(
+    ctx: &AttackContext,
+    state: &mut AttackState,
+    nonces: &[Nonce],
+    attack_type: AttackType,
+    derive_ks: impl Fn(&Nonce) -> (u32, u32) + Sync,
+) {
+    let results: Vec<TaskResult> = nonces
+        .par_iter()
+        .filter(|n| n.attack == attack_type)
+        .map(|nonce| {
+            let (ks2, in_) = derive_ks(nonce);
+            process_one(ctx, nonce, ks2, in_, nonce.uid)
+        })
+        .collect();
+
+    for r in &results {
+        state.merge_found(&r.found);
+    }
+}
+
 pub type SaveDictFn<'a> =
     dyn FnMut(u32, &[(u8, MfClassicKey)], Option<&str>) -> Option<String> + 'a;
 
@@ -126,36 +147,13 @@ pub fn run_attack(
 
     state.ui.begin_progress(nonces.len());
 
-    {
-        let results: Vec<TaskResult> = nonces
-            .par_iter()
-            .filter(|n| n.attack == AttackType::Mfkey32)
-            .map(|nonce| {
-                let ks2 = nonce.ar0_enc ^ nonce.p64;
-                process_one(&ctx, nonce, ks2, 0, nonce.uid)
-            })
-            .collect();
+    run_pass(&ctx, state, nonces, AttackType::Mfkey32, |nonce| {
+        (nonce.ar0_enc ^ nonce.p64, 0)
+    });
 
-        for r in &results {
-            state.merge_found(&r.found);
-        }
-    }
-
-    {
-        let results: Vec<TaskResult> = nonces
-            .par_iter()
-            .filter(|n| n.attack == AttackType::StaticNested)
-            .map(|nonce| {
-                let ks_enc = nonce.ks1_2_enc;
-                let nt_xor_uid = nonce.uid_xor_nt1;
-                process_one(&ctx, nonce, ks_enc, nt_xor_uid, nonce.uid)
-            })
-            .collect();
-
-        for r in &results {
-            state.merge_found(&r.found);
-        }
-    }
+    run_pass(&ctx, state, nonces, AttackType::StaticNested, |nonce| {
+        (nonce.ks1_2_enc, nonce.uid_xor_nt1)
+    });
 
     let mut uid_order: Vec<u32> = Vec::new();
     let mut groups: HashMap<u32, Vec<&Nonce>> = HashMap::new();
