@@ -9,6 +9,30 @@ use std::path::{Path, PathBuf};
 const ASSETS_DIR: &str = "/ext/nfc/assets";
 const RESULT_REMOTE_NAME: &str = "mf_classic_dict_user.nfc";
 
+fn parse_existing_keys(data: &[u8]) -> BTreeSet<String> {
+    let mut set = BTreeSet::new();
+    for line in String::from_utf8_lossy(data).lines() {
+        let l = line.trim();
+        if !l.is_empty() {
+            set.insert(l.to_uppercase());
+        }
+    }
+    set
+}
+
+fn merge_key_sets(
+    existing: &BTreeSet<String>,
+    new: &BTreeSet<String>,
+) -> (usize, BTreeSet<String>) {
+    let mut merged = existing.clone();
+    let before = merged.len();
+    for k in new {
+        merged.insert(k.clone());
+    }
+    let added = merged.len() - before;
+    (added, merged)
+}
+
 pub fn upload_dicts(ui: &Ui, sess: &mut FlipperSession, local_dicts: &[PathBuf]) {
     if local_dicts.is_empty() {
         return;
@@ -76,28 +100,18 @@ pub fn merge_and_upload_keys(
 
     let remote_out = format!("{ASSETS_DIR}/{RESULT_REMOTE_NAME}");
 
-    let mut final_keys: BTreeSet<String> = BTreeSet::new();
-
     let existing = sess
         .storage_read(&remote_out)
         .ok()
         .filter(|d| !d.is_empty());
     let had_existing = existing.is_some();
 
-    if let Some(data) = &existing {
-        for line in String::from_utf8_lossy(data).lines() {
-            let l = line.trim();
-            if !l.is_empty() {
-                final_keys.insert(l.to_uppercase());
-            }
-        }
-    }
-
-    let before = final_keys.len();
-    for k in all_keys {
-        final_keys.insert(k.clone());
-    }
-    let added = final_keys.len() - before;
+    let existing_keys = existing
+        .as_deref()
+        .map(parse_existing_keys)
+        .unwrap_or_default();
+    let before = existing_keys.len();
+    let (added, final_keys) = merge_key_sets(&existing_keys, all_keys);
 
     ui.show_dict_merge_status(had_existing.then_some(before), added);
 
@@ -129,3 +143,7 @@ pub fn merge_and_upload_keys(
 
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "../tests/auto_upload.rs"]
+mod tests;

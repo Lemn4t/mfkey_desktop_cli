@@ -94,8 +94,7 @@ fn parse_mfkey32_line_extracts_all_fields() {
 
 #[test]
 fn parse_mfkey32_line_accepts_uid_alias() {
-    let line =
-        "uid 7a962390 nt0 aabbccdd nr0 11223344 ar0 55667788 nt1 aaaa1111 nr1 bbbb2222 ar1 cccc3333";
+    let line = "uid 7a962390 nt0 aabbccdd nr0 11223344 ar0 55667788 nt1 aaaa1111 nr1 bbbb2222 ar1 cccc3333";
     let nonce = parse_mfkey32_line(&tokens_of(line)).expect("should parse");
     assert_eq!(nonce.uid, 0x7a962390);
 }

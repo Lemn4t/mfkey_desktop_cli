@@ -21,7 +21,10 @@ fn to_hex_is_uppercase_zero_padded() {
 #[test]
 fn to_hex_all_zero_and_all_ff() {
     assert_eq!(MfClassicKey::from_slice(&[0; 6]).to_hex(), "000000000000");
-    assert_eq!(MfClassicKey::from_slice(&[0xFF; 6]).to_hex(), "FFFFFFFFFFFF");
+    assert_eq!(
+        MfClassicKey::from_slice(&[0xFF; 6]).to_hex(),
+        "FFFFFFFFFFFF"
+    );
 }
 
 #[test]

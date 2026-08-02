@@ -11,6 +11,7 @@
 - Auto-detect NO_COLOR and non-interactive stdout, forcing plain output even without --plain
 - Add unit tests for ui::render\_\* formatting functions and ui::theme's style primitives
 - Add unit tests for core::model (MfClassicKey from_slice/to_hex, save_keys_to_file), core::state's DedupVec, core::paths::display_path, and core::parser's mfkey32 line parsing
+- Add unit tests for flipper::framing's varint length framing (encode/decode round-trip, guards) and auto::upload's key-set merge logic
 
 ### Updated
 
@@ -45,6 +46,7 @@
 - Read a parsed nonce's uid/attack_name before pushing it, removing a nonces.last().unwrap() in load_nested_nonces
 - Pass candidate dictionary paths to show_saved_dicts as &str instead of cloning them into owned Strings
 - Route the --auto report's status glyphs through theme::glyph and omit them in plain mode, matching the attack report's glyph-free plain output
+- Extract pure varint encode/decode helpers in flipper::framing and pure key-merge helpers (parse_existing_keys, merge_key_sets) in auto::upload so both become unit-testable without a device; the wire format and upload behavior are unchanged
 
 ### Fixed
 
