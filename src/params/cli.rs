@@ -17,7 +17,6 @@ pub struct Cli {
     #[arg(value_name = "DICT_OUTPUT_DIR")]
     pub dict_output_dir: Option<String>,
 
-    /// Disable colors and decorative Unicode characters
     #[arg(long)]
     pub plain: bool,
 
@@ -30,7 +29,6 @@ pub struct Cli {
     #[arg(long, requires = "auto", value_name = "DIR")]
     pub out: Option<PathBuf>,
 
-    /// Accept the Disclaimer and Terms of Use (see README.md or run without this flag)
     #[arg(long)]
     pub accept_disclaimer: bool,
 }

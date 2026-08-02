@@ -6,56 +6,26 @@ pub mod transport;
 
 pub use session::FlipperSession;
 
-use std::fmt;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum FlipperError {
-    Io(std::io::Error),
-    Serial(serialport::Error),
-    Decode(prost::DecodeError),
-    Encode(prost::EncodeError),
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("serial error: {0}")]
+    Serial(#[from] serialport::Error),
+    #[error("protobuf decode error: {0}")]
+    Decode(#[from] prost::DecodeError),
+    #[error("protobuf encode error: {0}")]
+    Encode(#[from] prost::EncodeError),
+    #[error("flipper command error, status={0}")]
     CommandStatus(i32),
+    #[error("Flipper Zero not found")]
     NotFound,
+    #[error("operation timed out")]
     Timeout,
+    #[error("protocol error: {0}")]
     Protocol(String),
-}
-
-impl fmt::Display for FlipperError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            FlipperError::Io(e) => write!(f, "io error: {e}"),
-            FlipperError::Serial(e) => write!(f, "serial error: {e}"),
-            FlipperError::Decode(e) => write!(f, "protobuf decode error: {e}"),
-            FlipperError::Encode(e) => write!(f, "protobuf encode error: {e}"),
-            FlipperError::CommandStatus(c) => write!(f, "flipper command error, status={c}"),
-            FlipperError::NotFound => write!(f, "Flipper Zero not found"),
-            FlipperError::Timeout => write!(f, "operation timed out"),
-            FlipperError::Protocol(s) => write!(f, "protocol error: {s}"),
-        }
-    }
-}
-
-impl std::error::Error for FlipperError {}
-
-impl From<std::io::Error> for FlipperError {
-    fn from(e: std::io::Error) -> Self {
-        FlipperError::Io(e)
-    }
-}
-impl From<serialport::Error> for FlipperError {
-    fn from(e: serialport::Error) -> Self {
-        FlipperError::Serial(e)
-    }
-}
-impl From<prost::DecodeError> for FlipperError {
-    fn from(e: prost::DecodeError) -> Self {
-        FlipperError::Decode(e)
-    }
-}
-impl From<prost::EncodeError> for FlipperError {
-    fn from(e: prost::EncodeError) -> Self {
-        FlipperError::Encode(e)
-    }
 }
 
 pub type Result<T> = std::result::Result<T, FlipperError>;

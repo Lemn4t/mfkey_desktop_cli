@@ -34,6 +34,7 @@
 - Remove dead fields and unused parameters (TaskState.current_uid, AttackState::new's ignored nonce-count argument, UiInner.total_nonces, DirEntry.size)
 - Deduplicate Flipper port discovery by having find_flipper_port reuse find_all_flipper_ports instead of a second copy of the scan loop
 - Remove the unused storage_exists RPC helper
+- Migrate FlipperError to a thiserror-derived enum, dropping the hand-written Display/Error/From impls while keeping the exact same error messages
 
 ### Fixed
 

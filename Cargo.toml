@@ -22,6 +22,7 @@ rayon = "1.12.0"
 clap = { version = "4.6.4", features = ["derive"] }
 dirs = "6.0.0"
 yaml_serde = "0.10.4"
+thiserror = "2.0.19"
 
 [build-dependencies]
 cc = "1.4.0"
