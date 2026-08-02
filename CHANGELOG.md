@@ -29,6 +29,7 @@
 - Extract Ui's formatting logic into pure render\_\* functions, separate from the methods that print them
 - Split src/ui/mod.rs into ui/attack_report.rs and ui/auto_report.rs, grouped by which caller actually uses them
 - Extract src/run.rs for the single-file mode's orchestration, moving save_keys_to_file into core::model and display_path into core::paths, leaving main.rs as a thin entry point
+- Extract a shared accumulate() helper in core::state, replacing four hand-rolled copies of the same insert-if-new bookkeeping in TaskState/AttackState
 
 ### Fixed
 

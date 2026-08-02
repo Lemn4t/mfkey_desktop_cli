@@ -1,9 +1,19 @@
 use crate::core::model::MfClassicKey;
 use crate::ui::Ui;
 use std::collections::HashSet;
+use std::hash::Hash;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+
+fn accumulate<T: Eq + Hash + Copy>(items: &mut Vec<T>, seen: &mut HashSet<T>, item: T) -> bool {
+    if seen.insert(item) {
+        items.push(item);
+        true
+    } else {
+        false
+    }
+}
 
 pub struct AttackContext {
     pub stop: Arc<AtomicBool>,
@@ -61,15 +71,15 @@ impl<'ctx> TaskState<'ctx> {
     }
 
     pub fn add_found_key(&mut self, key: MfClassicKey) {
-        if self.found_set.insert(key) {
-            self.found_keys.push(key);
-        }
+        accumulate(&mut self.found_keys, &mut self.found_set, key);
     }
 
     pub fn add_candidate_key(&mut self, key_idx: u8, key: MfClassicKey) {
-        if self.candidate_set.insert((key_idx, key)) {
-            self.candidate_keys.push((key_idx, key));
-        }
+        accumulate(
+            &mut self.candidate_keys,
+            &mut self.candidate_set,
+            (key_idx, key),
+        );
     }
 
     #[inline]
@@ -102,9 +112,11 @@ impl AttackState {
     }
 
     pub fn add_candidate_key(&mut self, key_idx: u8, key: MfClassicKey) {
-        if self.candidate_set.insert((key_idx, key)) {
-            self.candidate_keys.push((key_idx, key));
-        }
+        accumulate(
+            &mut self.candidate_keys,
+            &mut self.candidate_set,
+            (key_idx, key),
+        );
     }
 
     pub fn clear_candidates(&mut self) {
@@ -114,9 +126,7 @@ impl AttackState {
 
     pub fn merge_found(&mut self, keys: &[MfClassicKey]) {
         for &k in keys {
-            if self.found_set.insert(k) {
-                self.found_keys.push(k);
-            }
+            accumulate(&mut self.found_keys, &mut self.found_set, k);
         }
     }
 
