@@ -3,8 +3,9 @@ use std::os::raw::{c_float, c_int, c_void};
 pub const MF_CLASSIC_KEY_SIZE: usize = 6;
 
 #[repr(i32)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum AttackType {
+    #[default]
     Mfkey32 = 0,
     StaticNested = 1,
     StaticEncrypted = 2,

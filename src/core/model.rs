@@ -16,7 +16,12 @@ impl MfClassicKey {
     }
 
     pub fn to_hex(self) -> String {
-        self.data.iter().map(|b| format!("{:02X}", b)).collect()
+        use std::fmt::Write;
+        let mut s = String::with_capacity(self.data.len() * 2);
+        for b in &self.data {
+            let _ = write!(s, "{:02X}", b);
+        }
+        s
     }
 }
 
@@ -31,7 +36,7 @@ pub fn save_keys_to_file(path: &str, keys: &[MfClassicKey]) -> Rslt<()> {
     Ok(())
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Nonce {
     pub attack: AttackType,
     pub key_idx: u8,
@@ -82,30 +87,6 @@ impl Nonce {
             AttackType::StaticNested => "static_nested",
             AttackType::StaticEncrypted => "static_encrypted",
             AttackType::Mfkey32 => "mfkey32",
-        }
-    }
-}
-
-impl Default for Nonce {
-    fn default() -> Self {
-        Nonce {
-            attack: AttackType::Mfkey32,
-            key_idx: 0,
-            uid: 0,
-            nt0: 0,
-            nt1: 0,
-            uid_xor_nt0: 0,
-            uid_xor_nt1: 0,
-            ks1_1_enc: 0,
-            ks1_2_enc: 0,
-            par_1: 0,
-            par_2: 0,
-            nr0_enc: 0,
-            ar0_enc: 0,
-            nr1_enc: 0,
-            ar1_enc: 0,
-            p64: 0,
-            p64b: 0,
         }
     }
 }

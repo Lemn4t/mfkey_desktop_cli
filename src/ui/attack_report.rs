@@ -186,18 +186,18 @@ fn render_saved_files(mode: OutputMode, keys_file: Option<&str>, keys_count: usi
     lines
 }
 
-fn render_saved_dicts(mode: OutputMode, dicts: &[(String, usize)]) -> Vec<String> {
+fn render_saved_dicts(mode: OutputMode, dicts: &[(&str, usize)]) -> Vec<String> {
     if dicts.is_empty() {
         return Vec::new();
     }
     let plain = mode.is_plain();
 
     let mut lines = vec![format!("\nCandidate dictionaries ({} files):", dicts.len())];
-    for (path, count) in dicts {
+    for &(path, count) in dicts {
         let filename = std::path::Path::new(path)
             .file_name()
             .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_else(|| path.clone());
+            .unwrap_or_else(|| path.to_string());
         let line = format!("{} {} ({} candidates)", glyph::BULLET, filename, count);
         lines.push(theme::indent(1, &theme::accent(&line, plain)));
     }
@@ -314,7 +314,7 @@ impl Ui {
         }
     }
 
-    pub fn show_saved_dicts(&self, dicts: &[(String, usize)]) {
+    pub fn show_saved_dicts(&self, dicts: &[(&str, usize)]) {
         for line in render_saved_dicts(self.opts.mode, dicts) {
             self.write_line(&line);
         }

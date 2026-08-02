@@ -1,3 +1,4 @@
+use super::theme::glyph;
 use super::{MessageKind, Ui};
 
 fn render_dict_merge_detail(existing_count: Option<usize>, added: usize) -> String {
@@ -9,23 +10,28 @@ fn render_dict_merge_detail(existing_count: Option<usize>, added: usize) -> Stri
 
 impl Ui {
     pub fn show_searching_for_flipper(&self) {
-        self.status_line("→ Searching for Flipper Zero...", MessageKind::Info);
+        let text = self.with_glyph(glyph::ARROW, "Searching for Flipper Zero...");
+        self.status_line(&text, MessageKind::Info);
     }
 
     pub fn show_flipper_port(&self, port: &str) {
-        self.status_value_line("✓ Flipper port:", port, MessageKind::Success);
+        let prefix = self.with_glyph(glyph::CHECK, "Flipper port:");
+        self.status_value_line(&prefix, port, MessageKind::Success);
     }
 
     pub fn show_opening_session(&self) {
-        self.status_line("→ Opening RPC session...", MessageKind::Info);
+        let text = self.with_glyph(glyph::ARROW, "Opening RPC session...");
+        self.status_line(&text, MessageKind::Info);
     }
 
     pub fn show_session_ready(&self) {
-        self.status_line("✓ RPC session is up (ping OK)", MessageKind::Success);
+        let text = self.with_glyph(glyph::CHECK, "RPC session is up (ping OK)");
+        self.status_line(&text, MessageKind::Success);
     }
 
     pub fn show_listing_dir(&self, dir: &str) {
-        self.status_detail_line("→ Listing", dir, MessageKind::Info, false);
+        let prefix = self.with_glyph(glyph::ARROW, "Listing");
+        self.status_detail_line(&prefix, dir, MessageKind::Info, false);
     }
 
     pub fn show_no_logs_found(&self, dir: &str) {
@@ -36,8 +42,9 @@ impl Ui {
     }
 
     pub fn show_logs_found(&self, names: &[String]) {
+        let prefix = self.with_glyph(glyph::CHECK, "Found");
         self.status_detail_line(
-            "✓ Found",
+            &prefix,
             &format!("{} file(s): {}", names.len(), names.join(", ")),
             MessageKind::Success,
             false,
@@ -45,7 +52,8 @@ impl Ui {
     }
 
     pub fn show_downloading(&self, remote: &str) {
-        self.status_detail_line("↓ Downloading", remote, MessageKind::Info, false);
+        let prefix = self.with_glyph(glyph::DOWN, "Downloading");
+        self.status_detail_line(&prefix, remote, MessageKind::Info, false);
     }
 
     pub fn show_saved_local_log(&self, path: &std::path::Path, bytes: usize) {
@@ -53,16 +61,19 @@ impl Ui {
     }
 
     pub fn show_running_attack(&self) {
-        self.status_line("→ Running attack...", MessageKind::Info);
+        let text = self.with_glyph(glyph::ARROW, "Running attack...");
+        self.status_line(&text, MessageKind::Info);
     }
 
     pub fn show_deleting_from_device(&self, remote: &str) {
-        self.status_detail_line("✗ Deleting from device", remote, MessageKind::Info, false);
+        let prefix = self.with_glyph(glyph::CROSS, "Deleting from device");
+        self.status_detail_line(&prefix, remote, MessageKind::Info, false);
     }
 
     pub fn show_uploading_dicts(&self, count: usize) {
+        let prefix = self.with_glyph(glyph::UP, "Uploading");
         self.status_detail_line(
-            "↑ Uploading",
+            &prefix,
             &format!("{count} candidate dict(s) to device..."),
             MessageKind::Info,
             false,
@@ -78,8 +89,9 @@ impl Ui {
     }
 
     pub fn show_keys_found_count(&self, count: usize) {
+        let prefix = self.with_glyph(glyph::CHECK, "Found");
         self.status_detail_line(
-            "✓ Found",
+            &prefix,
             &format!("{count} key(s)"),
             MessageKind::Success,
             false,
@@ -92,14 +104,19 @@ impl Ui {
 
     pub fn show_dict_merge_status(&self, existing_count: Option<usize>, added: usize) {
         let detail = render_dict_merge_detail(existing_count, added);
-        self.status_detail_line("→", &detail, MessageKind::Info, false);
+        if self.is_plain() {
+            self.status_line(&detail, MessageKind::Info);
+        } else {
+            self.status_detail_line(glyph::ARROW, &detail, MessageKind::Info, false);
+        }
     }
 
     pub fn show_nothing_new_to_upload(&self) {
-        self.status_line(
-            "✓ Nothing new to upload (all keys already present).",
-            MessageKind::Success,
+        let text = self.with_glyph(
+            glyph::CHECK,
+            "Nothing new to upload (all keys already present).",
         );
+        self.status_line(&text, MessageKind::Success);
     }
 
     pub fn show_local_copies(&self, dir: &std::path::Path) {
@@ -111,8 +128,9 @@ impl Ui {
     }
 
     pub fn show_uploading_full_dict(&self, remote: &str) {
+        let prefix = self.with_glyph(glyph::UP, "Uploading");
         self.status_detail_line(
-            "↑ Uploading",
+            &prefix,
             &format!("{remote} (full file)"),
             MessageKind::Info,
             false,
@@ -120,12 +138,8 @@ impl Ui {
     }
 
     pub fn show_upload_done(&self, remote: &str) {
-        self.status_detail_line(
-            "✓ Done. Keys uploaded to",
-            remote,
-            MessageKind::Success,
-            true,
-        );
+        let prefix = self.with_glyph(glyph::CHECK, "Done. Keys uploaded to");
+        self.status_detail_line(&prefix, remote, MessageKind::Success, true);
     }
 }
 

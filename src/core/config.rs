@@ -12,14 +12,14 @@ pub struct Config {
 
 impl Config {
     pub fn read() -> Config {
-        File::open(config_path())
-            .ok()
+        config_path()
+            .and_then(|p| File::open(p).ok())
             .and_then(|file| yaml_serde::from_reader(file).ok())
             .unwrap_or_default()
     }
 
     fn store(&self) -> Rslt<()> {
-        let config_path = config_path();
+        let config_path = config_path().or_err("no config directory available")?;
         if !config_path.exists() {
             let parent = config_path.parent().or_err("No parent directory")?;
             fs::create_dir_all(parent)?;

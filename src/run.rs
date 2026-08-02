@@ -66,9 +66,9 @@ pub fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) -> Rslt<()> {
     ui.show_saved_files(keys_file, found_count);
 
     if !dict_outputs.is_empty() {
-        let dicts: Vec<(String, usize)> = dict_outputs
+        let dicts: Vec<(&str, usize)> = dict_outputs
             .iter()
-            .map(|d| (d.path.clone(), d.count))
+            .map(|d| (d.path.as_str(), d.count))
             .collect();
         ui.show_saved_dicts(&dicts);
     }

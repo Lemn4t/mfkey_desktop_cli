@@ -74,7 +74,6 @@ fn main() {
 
     cfg.protoc_executable(protoc);
 
-
     cfg.compile_protos(&protos, &[proto_dir])
         .expect("prost-build failed");
 }

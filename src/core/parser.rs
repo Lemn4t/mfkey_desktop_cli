@@ -152,10 +152,10 @@ where
         };
 
         if let Some(nonce) = parsed {
+            let uid = nonce.uid;
+            let name = nonce.attack_name();
             nonces.push(nonce);
-            let idx = nonces.len();
-            let last = nonces.last().unwrap();
-            on_loaded(idx, last.uid, last.attack_name());
+            on_loaded(nonces.len(), uid, name);
         }
     }
 

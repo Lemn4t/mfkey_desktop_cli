@@ -146,7 +146,7 @@ fn saved_dicts_empty_is_empty() {
 
 #[test]
 fn saved_dicts_uses_file_name_only() {
-    let dicts = vec![("/some/path/dict.txt".to_string(), 7usize)];
+    let dicts = vec![("/some/path/dict.txt", 7usize)];
     let lines = render_saved_dicts(OutputMode::Plain, &dicts);
     assert_eq!(lines.len(), 2);
     assert!(lines[1].contains("dict.txt"));

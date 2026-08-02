@@ -6,6 +6,9 @@ pub mod glyph {
     pub const BULLET: &str = "▸";
     pub const CHECK: &str = "✓";
     pub const CROSS: &str = "✗";
+    pub const ARROW: &str = "→";
+    pub const DOWN: &str = "↓";
+    pub const UP: &str = "↑";
     pub const TREE: &str = "└─";
     pub const DOT: &str = "•";
     pub const BANNER_LEFT: &str = "░▒▓█";

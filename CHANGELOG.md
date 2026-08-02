@@ -40,6 +40,10 @@
 - Replace the duplicated dedup bookkeeping in TaskState/AttackState with a shared DedupVec<T> newtype (Vec + HashSet, derefs to a slice), dropping the accumulate() helper and the parallel *_set fields
 - Split the StaticEncrypted path of engine::run_attack into group_static_encrypted_by_uid and process_uid_group helpers, leaving run_attack a linear two-pass-plus-loop
 - Move dictionary-file error reporting out of the file-writing helper: split save_candidate_dict into a pure candidate_dict_path and a UI-free write_candidate_dict, leaving the run_file_attack closure to report failures
+- Derive Default for Nonce and AttackType instead of a hand-written impl, and build MfClassicKey::to_hex in a single preallocated String instead of one allocation per byte
+- Read a parsed nonce's uid/attack_name before pushing it, removing a nonces.last().unwrap() in load_nested_nonces
+- Pass candidate dictionary paths to show_saved_dicts as &str instead of cloning them into owned Strings
+- Route the --auto report's status glyphs through theme::glyph and omit them in plain mode, matching the attack report's glyph-free plain output
 
 ### Fixed
 
@@ -52,6 +56,7 @@
 - Show disclaimer and tool's title in main
 - Only pass -fno-plt on Linux, avoiding a harmless but noisy "argument unused" warning on macOS builds
 - Return a dedicated FlipperError::Encode on protobuf encode failure instead of mislabeling it as a generic protocol error
+- Return Option from config_path and handle a missing home/config directory gracefully instead of panicking (the config simply isn't persisted)
 
 ## [1.0.5] - 2026-07-18
 

@@ -149,6 +149,14 @@ impl Ui {
         self.write_line(&theme::colored(text, kind, self.is_plain()));
     }
 
+    fn with_glyph(&self, glyph: &str, text: &str) -> String {
+        if self.is_plain() {
+            text.to_string()
+        } else {
+            format!("{glyph} {text}")
+        }
+    }
+
     fn status_detail_line(&self, prefix: &str, detail: &str, kind: MessageKind, bold: bool) {
         let plain = self.is_plain();
         let styled_prefix = if bold {

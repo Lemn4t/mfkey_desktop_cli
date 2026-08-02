@@ -6,20 +6,18 @@ const PROGRAM_DIR: &str = "mfkey";
 const CONFIG_FILE: &str = "config.yaml";
 
 #[cfg(unix)]
-pub fn config_path() -> PathBuf {
-    dirs::home_dir()
-        .expect("no home dir")
-        .join(CONFIG_DIR)
-        .join(PROGRAM_DIR)
-        .join(CONFIG_FILE)
+pub fn config_path() -> Option<PathBuf> {
+    Some(
+        dirs::home_dir()?
+            .join(CONFIG_DIR)
+            .join(PROGRAM_DIR)
+            .join(CONFIG_FILE),
+    )
 }
 
 #[cfg(windows)]
-pub fn config_path() -> PathBuf {
-    dirs::config_dir()
-        .expect("no AppData/Roaming")
-        .join(PROGRAM_DIR)
-        .join(CONFIG_FILE)
+pub fn config_path() -> Option<PathBuf> {
+    Some(dirs::config_dir()?.join(PROGRAM_DIR).join(CONFIG_FILE))
 }
 
 pub fn display_path(p: &std::path::Path) -> String {
