@@ -37,6 +37,7 @@
 - Migrate FlipperError to a thiserror-derived enum, dropping the hand-written Display/Error/From impls while keeping the exact same error messages
 - Make run() return Rslt<()> and centralize its exit-code handling in main, matching the --auto arm instead of calling process::exit inline
 - Decompose the ~125-line run_auto into focused helpers (resolve_logs_dir, discover_port, download_target_logs, run_attacks_over_logs, maybe_delete_remote_logs)
+- Replace the duplicated dedup bookkeeping in TaskState/AttackState with a shared DedupVec<T> newtype (Vec + HashSet, derefs to a slice), dropping the accumulate() helper and the parallel *_set fields
 
 ### Fixed
 

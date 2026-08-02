@@ -107,8 +107,8 @@ fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32) -> TaskRe
     ctx.processed.fetch_add(1, Ordering::Relaxed);
 
     TaskResult {
-        found: ts.found_keys,
-        candidates: ts.candidate_keys,
+        found: ts.found_keys.into_vec(),
+        candidates: ts.candidate_keys.into_vec(),
     }
 }
 

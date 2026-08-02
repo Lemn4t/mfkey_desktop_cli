@@ -66,7 +66,7 @@ pub fn run_file_attack(
     ui.show_summary(nonce_count, found_count, candidate_total_count);
 
     Ok(FileAttackOutcome::Ran(FileAttackResult {
-        found_keys: attack_state.found_keys,
+        found_keys: attack_state.found_keys.into_vec(),
         candidate_total_count,
         dict_outputs,
     }))

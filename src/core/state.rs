@@ -2,16 +2,60 @@ use crate::core::model::MfClassicKey;
 use crate::ui::Ui;
 use std::collections::HashSet;
 use std::hash::Hash;
+use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
-fn accumulate<T: Eq + Hash + Copy>(items: &mut Vec<T>, seen: &mut HashSet<T>, item: T) -> bool {
-    if seen.insert(item) {
-        items.push(item);
-        true
-    } else {
-        false
+pub struct DedupVec<T> {
+    items: Vec<T>,
+    seen: HashSet<T>,
+}
+
+impl<T: Eq + Hash + Copy> DedupVec<T> {
+    pub fn new() -> Self {
+        DedupVec {
+            items: Vec::new(),
+            seen: HashSet::new(),
+        }
+    }
+
+    pub fn push(&mut self, item: T) -> bool {
+        if self.seen.insert(item) {
+            self.items.push(item);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        for item in iter {
+            self.push(item);
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.items.clear();
+        self.seen.clear();
+    }
+
+    pub fn into_vec(self) -> Vec<T> {
+        self.items
+    }
+}
+
+impl<T: Eq + Hash + Copy> Default for DedupVec<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T> Deref for DedupVec<T> {
+    type Target = [T];
+
+    fn deref(&self) -> &[T] {
+        &self.items
     }
 }
 
@@ -46,11 +90,8 @@ impl AttackContext {
 }
 
 pub struct TaskState<'ctx> {
-    pub found_keys: Vec<MfClassicKey>,
-    found_set: HashSet<MfClassicKey>,
-
-    pub candidate_keys: Vec<(u8, MfClassicKey)>,
-    candidate_set: HashSet<(u8, MfClassicKey)>,
+    pub found_keys: DedupVec<MfClassicKey>,
+    pub candidate_keys: DedupVec<(u8, MfClassicKey)>,
 
     pub ctx: &'ctx AttackContext,
     pub total_nonces: usize,
@@ -59,25 +100,19 @@ pub struct TaskState<'ctx> {
 impl<'ctx> TaskState<'ctx> {
     pub fn new(ctx: &'ctx AttackContext) -> Self {
         TaskState {
-            found_keys: Vec::new(),
-            found_set: HashSet::new(),
-            candidate_keys: Vec::new(),
-            candidate_set: HashSet::new(),
+            found_keys: DedupVec::new(),
+            candidate_keys: DedupVec::new(),
             total_nonces: ctx.total_nonces,
             ctx,
         }
     }
 
     pub fn add_found_key(&mut self, key: MfClassicKey) {
-        accumulate(&mut self.found_keys, &mut self.found_set, key);
+        self.found_keys.push(key);
     }
 
     pub fn add_candidate_key(&mut self, key_idx: u8, key: MfClassicKey) {
-        accumulate(
-            &mut self.candidate_keys,
-            &mut self.candidate_set,
-            (key_idx, key),
-        );
+        self.candidate_keys.push((key_idx, key));
     }
 
     #[inline]
@@ -87,11 +122,8 @@ impl<'ctx> TaskState<'ctx> {
 }
 
 pub struct AttackState {
-    pub found_keys: Vec<MfClassicKey>,
-    found_set: HashSet<MfClassicKey>,
-
-    pub candidate_keys: Vec<(u8, MfClassicKey)>,
-    candidate_set: HashSet<(u8, MfClassicKey)>,
+    pub found_keys: DedupVec<MfClassicKey>,
+    pub candidate_keys: DedupVec<(u8, MfClassicKey)>,
 
     pub stop: Arc<AtomicBool>,
     pub ui: Arc<Ui>,
@@ -100,37 +132,22 @@ pub struct AttackState {
 impl AttackState {
     pub fn new(ui: Arc<Ui>, stop: Arc<AtomicBool>) -> Self {
         AttackState {
-            found_keys: Vec::new(),
-            found_set: HashSet::new(),
-            candidate_keys: Vec::new(),
-            candidate_set: HashSet::new(),
+            found_keys: DedupVec::new(),
+            candidate_keys: DedupVec::new(),
             stop,
             ui,
         }
     }
 
-    pub fn add_candidate_key(&mut self, key_idx: u8, key: MfClassicKey) {
-        accumulate(
-            &mut self.candidate_keys,
-            &mut self.candidate_set,
-            (key_idx, key),
-        );
-    }
-
     pub fn clear_candidates(&mut self) {
         self.candidate_keys.clear();
-        self.candidate_set.clear();
     }
 
     pub fn merge_found(&mut self, keys: &[MfClassicKey]) {
-        for &k in keys {
-            accumulate(&mut self.found_keys, &mut self.found_set, k);
-        }
+        self.found_keys.extend(keys.iter().copied());
     }
 
     pub fn merge_candidates(&mut self, cands: &[(u8, MfClassicKey)]) {
-        for &(idx, k) in cands {
-            self.add_candidate_key(idx, k);
-        }
+        self.candidate_keys.extend(cands.iter().copied());
     }
 }
