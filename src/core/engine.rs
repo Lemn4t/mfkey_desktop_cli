@@ -136,6 +136,65 @@ fn run_pass(
 pub type SaveDictFn<'a> =
     dyn FnMut(u32, &[(u8, MfClassicKey)], Option<&str>) -> Option<String> + 'a;
 
+fn group_static_encrypted_by_uid(nonces: &[Nonce]) -> Vec<(u32, Vec<&Nonce>)> {
+    let mut order: Vec<u32> = Vec::new();
+    let mut groups: HashMap<u32, Vec<&Nonce>> = HashMap::new();
+    for n in nonces.iter() {
+        if n.attack == AttackType::StaticEncrypted {
+            groups
+                .entry(n.uid)
+                .or_insert_with(|| {
+                    order.push(n.uid);
+                    Vec::new()
+                })
+                .push(n);
+        }
+    }
+    order
+        .into_iter()
+        .map(|uid| {
+            let group = groups.remove(&uid).unwrap_or_default();
+            (uid, group)
+        })
+        .collect()
+}
+
+fn process_uid_group(
+    ctx: &AttackContext,
+    state: &mut AttackState,
+    uid: u32,
+    group: &[&Nonce],
+    dict_output_dir: Option<&str>,
+    save_dict: &mut SaveDictFn,
+) -> (usize, Option<DictOutput>) {
+    let results: Vec<TaskResult> = group
+        .par_iter()
+        .map(|nonce| {
+            let ks_enc = nonce.ks1_1_enc;
+            let nt_xor_uid = nonce.uid_xor_nt0;
+            process_one(ctx, nonce, ks_enc, nt_xor_uid)
+        })
+        .collect();
+
+    state.clear_candidates();
+    for r in &results {
+        state.merge_candidates(&r.candidates);
+        state.merge_found(&r.found);
+    }
+
+    let mut count = 0;
+    let mut output = None;
+    if !state.candidate_keys.is_empty() {
+        count = state.candidate_keys.len();
+        if let Some(path) = save_dict(uid, &state.candidate_keys, dict_output_dir) {
+            output = Some(DictOutput { uid, count, path });
+        }
+    }
+    state.clear_candidates();
+
+    (count, output)
+}
+
 pub fn run_attack(
     state: &mut AttackState,
     nonces: &[Nonce],
@@ -154,53 +213,20 @@ pub fn run_attack(
         (nonce.ks1_2_enc, nonce.uid_xor_nt1)
     });
 
-    let mut uid_order: Vec<u32> = Vec::new();
-    let mut groups: HashMap<u32, Vec<&Nonce>> = HashMap::new();
-    for n in nonces.iter() {
-        if n.attack == AttackType::StaticEncrypted {
-            groups
-                .entry(n.uid)
-                .or_insert_with(|| {
-                    uid_order.push(n.uid);
-                    Vec::new()
-                })
-                .push(n);
-        }
-    }
-
     let mut dict_outputs: Vec<DictOutput> = Vec::new();
     let mut candidate_total_count: usize = 0;
 
-    for uid in uid_order {
+    for (uid, group) in group_static_encrypted_by_uid(nonces) {
         if ctx.should_stop() {
             break;
         }
 
-        let group = &groups[&uid];
-
-        let results: Vec<TaskResult> = group
-            .par_iter()
-            .map(|nonce| {
-                let ks_enc = nonce.ks1_1_enc;
-                let nt_xor_uid = nonce.uid_xor_nt0;
-                process_one(&ctx, nonce, ks_enc, nt_xor_uid)
-            })
-            .collect();
-
-        state.clear_candidates();
-        for r in &results {
-            state.merge_candidates(&r.candidates);
-            state.merge_found(&r.found);
+        let (count, output) =
+            process_uid_group(&ctx, state, uid, &group, dict_output_dir, save_dict);
+        candidate_total_count += count;
+        if let Some(o) = output {
+            dict_outputs.push(o);
         }
-
-        if !state.candidate_keys.is_empty() {
-            let count = state.candidate_keys.len();
-            if let Some(path) = save_dict(uid, &state.candidate_keys, dict_output_dir) {
-                dict_outputs.push(DictOutput { uid, count, path });
-            }
-            candidate_total_count += count;
-        }
-        state.clear_candidates();
     }
 
     (candidate_total_count, dict_outputs)

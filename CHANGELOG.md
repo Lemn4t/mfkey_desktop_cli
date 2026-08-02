@@ -38,6 +38,7 @@
 - Make run() return Rslt<()> and centralize its exit-code handling in main, matching the --auto arm instead of calling process::exit inline
 - Decompose the ~125-line run_auto into focused helpers (resolve_logs_dir, discover_port, download_target_logs, run_attacks_over_logs, maybe_delete_remote_logs)
 - Replace the duplicated dedup bookkeeping in TaskState/AttackState with a shared DedupVec<T> newtype (Vec + HashSet, derefs to a slice), dropping the accumulate() helper and the parallel *_set fields
+- Split the StaticEncrypted path of engine::run_attack into group_static_encrypted_by_uid and process_uid_group helpers, leaving run_attack a linear two-pass-plus-loop
 
 ### Fixed
 
