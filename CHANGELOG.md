@@ -47,6 +47,7 @@
 - Pass candidate dictionary paths to show_saved_dicts as &str instead of cloning them into owned Strings
 - Route the --auto report's status glyphs through theme::glyph and omit them in plain mode, matching the attack report's glyph-free plain output
 - Extract pure varint encode/decode helpers in flipper::framing and pure key-merge helpers (parse_existing_keys, merge_key_sets) in auto::upload so both become unit-testable without a device; the wire format and upload behavior are unchanged
+- Deduplicate the timeout-polling read loop in flipper::transport behind a shared poll_read helper, reused by read_u8, read_exact, and the start_rpc_session echo scan
 
 ### Fixed
 

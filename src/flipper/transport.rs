@@ -33,21 +33,10 @@ impl Transport {
         self.port.write_all(b"start_rpc_session\r")?;
         self.port.flush()?;
 
-        let mut byte = [0u8; 1];
         let echo_deadline = Instant::now() + Duration::from_secs(3);
         loop {
-            match self.port.read(&mut byte) {
-                Ok(1) if byte[0] == b'\n' => break,
-                Ok(_) => {}
-                Err(ref e) if is_timeout(e) => {
-                    if Instant::now() >= echo_deadline {
-                        return Err(FlipperError::Timeout);
-                    }
-                }
-                Err(e) => return Err(FlipperError::Io(e)),
-            }
-            if Instant::now() >= echo_deadline {
-                return Err(FlipperError::Timeout);
+            if self.read_u8(echo_deadline)? == b'\n' {
+                break;
             }
         }
 
@@ -85,17 +74,12 @@ impl Transport {
         acc
     }
 
-    pub fn read_u8(&mut self, deadline: Instant) -> Result<u8> {
-        let mut b = [0u8; 1];
+    fn poll_read(&mut self, buf: &mut [u8], deadline: Instant) -> Result<usize> {
         loop {
-            match self.port.read(&mut b) {
-                Ok(1) => return Ok(b[0]),
-                Ok(_) => {}
-                Err(ref e) if is_timeout(e) => {
-                    if Instant::now() >= deadline {
-                        return Err(FlipperError::Timeout);
-                    }
-                }
+            match self.port.read(buf) {
+                Ok(0) => {}
+                Ok(n) => return Ok(n),
+                Err(ref e) if is_timeout(e) => {}
                 Err(e) => return Err(FlipperError::Io(e)),
             }
             if Instant::now() >= deadline {
@@ -104,21 +88,19 @@ impl Transport {
         }
     }
 
+    pub fn read_u8(&mut self, deadline: Instant) -> Result<u8> {
+        let mut b = [0u8; 1];
+        self.poll_read(&mut b, deadline)?;
+        Ok(b[0])
+    }
+
     pub fn read_exact(&mut self, len: usize, deadline: Instant) -> Result<Vec<u8>> {
         let mut out = Vec::with_capacity(len);
         let mut tmp = vec![0u8; len];
         while out.len() < len {
             let want = len - out.len();
-            match self.port.read(&mut tmp[..want]) {
-                Ok(0) => {}
-                Ok(n) => out.extend_from_slice(&tmp[..n]),
-                Err(ref e) if is_timeout(e) => {
-                    if Instant::now() >= deadline {
-                        return Err(FlipperError::Timeout);
-                    }
-                }
-                Err(e) => return Err(FlipperError::Io(e)),
-            }
+            let n = self.poll_read(&mut tmp[..want], deadline)?;
+            out.extend_from_slice(&tmp[..n]);
             if Instant::now() >= deadline && out.len() < len {
                 return Err(FlipperError::Timeout);
             }
