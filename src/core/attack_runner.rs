@@ -6,7 +6,7 @@ use crate::ext::result::Rslt;
 use crate::ui::Ui;
 use std::fs;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
@@ -53,10 +53,18 @@ pub fn run_file_attack(
 
     let mut attack_state = AttackState::new(Arc::clone(ui), Arc::clone(stop));
 
-    let mut save_dict = |uid: u32,
-                         keys: &[(u8, MfClassicKey)],
-                         dir: Option<&str>|
-     -> Option<String> { save_candidate_dict(ui, uid, keys, dir) };
+    let mut save_dict =
+        |uid: u32, keys: &[(u8, MfClassicKey)], dir: Option<&str>| -> Option<String> {
+            let path = candidate_dict_path(uid, dir);
+            let path_str = path.to_string_lossy().to_string();
+            match write_candidate_dict(&path, keys) {
+                Ok(()) => Some(path_str),
+                Err(_) => {
+                    ui.show_error(&format!("Failed to create dictionary file: {}", path_str));
+                    None
+                }
+            }
+        };
 
     let (candidate_total_count, dict_outputs) =
         engine::run_attack(&mut attack_state, &nonces, dict_output_dir, &mut save_dict);
@@ -72,29 +80,18 @@ pub fn run_file_attack(
     }))
 }
 
-fn save_candidate_dict(
-    ui: &Ui,
-    uid: u32,
-    keys: &[(u8, MfClassicKey)],
-    output_dir: Option<&str>,
-) -> Option<String> {
+fn candidate_dict_path(uid: u32, output_dir: Option<&str>) -> PathBuf {
     let filename = format!("mf_classic_dict_{:08x}.nfc", uid);
-    let path = match output_dir {
+    match output_dir {
         Some(dir) => Path::new(dir).join(&filename),
         None => Path::new(&filename).to_path_buf(),
-    };
-    let path_str = path.to_string_lossy().to_string();
-
-    match fs::File::create(&path) {
-        Ok(mut file) => {
-            for (key_idx, k) in keys {
-                let _ = writeln!(file, "{:02X}{}", key_idx, k.to_hex());
-            }
-            Some(path_str)
-        }
-        Err(_) => {
-            ui.show_error(&format!("Failed to create dictionary file: {}", path_str));
-            None
-        }
     }
+}
+
+fn write_candidate_dict(path: &Path, keys: &[(u8, MfClassicKey)]) -> std::io::Result<()> {
+    let mut file = fs::File::create(path)?;
+    for (key_idx, k) in keys {
+        let _ = writeln!(file, "{:02X}{}", key_idx, k.to_hex());
+    }
+    Ok(())
 }

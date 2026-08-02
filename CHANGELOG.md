@@ -39,6 +39,7 @@
 - Decompose the ~125-line run_auto into focused helpers (resolve_logs_dir, discover_port, download_target_logs, run_attacks_over_logs, maybe_delete_remote_logs)
 - Replace the duplicated dedup bookkeeping in TaskState/AttackState with a shared DedupVec<T> newtype (Vec + HashSet, derefs to a slice), dropping the accumulate() helper and the parallel *_set fields
 - Split the StaticEncrypted path of engine::run_attack into group_static_encrypted_by_uid and process_uid_group helpers, leaving run_attack a linear two-pass-plus-loop
+- Move dictionary-file error reporting out of the file-writing helper: split save_candidate_dict into a pure candidate_dict_path and a UI-free write_candidate_dict, leaving the run_file_attack closure to report failures
 
 ### Fixed
 
