@@ -77,6 +77,36 @@ fn parse_nested_line_missing_required_field_returns_none() {
 }
 
 #[test]
+fn parse_mfkey32_line_extracts_all_fields() {
+    let line = "Sec 0 key A cuid 7a962390 nt0 aabbccdd nr0 11223344 ar0 55667788 nt1 aaaa1111 nr1 bbbb2222 ar1 cccc3333";
+    let nonce = parse_mfkey32_line(&tokens_of(line)).expect("should parse");
+    assert_eq!(nonce.attack, AttackType::Mfkey32);
+    assert_eq!(nonce.uid, 0x7a962390);
+    assert_eq!(nonce.nt0, 0xaabbccdd);
+    assert_eq!(nonce.nr0_enc, 0x11223344);
+    assert_eq!(nonce.ar0_enc, 0x55667788);
+    assert_eq!(nonce.nt1, 0xaaaa1111);
+    assert_eq!(nonce.nr1_enc, 0xbbbb2222);
+    assert_eq!(nonce.ar1_enc, 0xcccc3333);
+    assert_eq!(nonce.uid_xor_nt0, 0x7a962390 ^ 0xaabbccdd);
+    assert_eq!(nonce.uid_xor_nt1, 0x7a962390 ^ 0xaaaa1111);
+}
+
+#[test]
+fn parse_mfkey32_line_accepts_uid_alias() {
+    let line =
+        "uid 7a962390 nt0 aabbccdd nr0 11223344 ar0 55667788 nt1 aaaa1111 nr1 bbbb2222 ar1 cccc3333";
+    let nonce = parse_mfkey32_line(&tokens_of(line)).expect("should parse");
+    assert_eq!(nonce.uid, 0x7a962390);
+}
+
+#[test]
+fn parse_mfkey32_line_missing_field_returns_none() {
+    let line = "cuid 7a962390 nt0 aabbccdd nr0 11223344 ar0 55667788";
+    assert!(parse_mfkey32_line(&tokens_of(line)).is_none());
+}
+
+#[test]
 fn load_nested_nonces_mixes_static_and_hardnested_and_reports_both() {
     let content = "\
 Sec 0 key A cuid 7a962390 nt0 aabbccdd nr0 11223344 ar0 55667788 nt1 aaaa1111 nr1 bbbb2222 ar1 cccc3333

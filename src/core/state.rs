@@ -151,3 +151,7 @@ impl AttackState {
         self.candidate_keys.extend(cands.iter().copied());
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/core_state.rs"]
+mod tests;

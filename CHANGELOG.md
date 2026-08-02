@@ -10,6 +10,7 @@
 - Add unit tests for core::parser (line classification, mfkey32/static_nested/static_encrypted/HardNested, load_nested_nonces)
 - Auto-detect NO_COLOR and non-interactive stdout, forcing plain output even without --plain
 - Add unit tests for ui::render\_\* formatting functions and ui::theme's style primitives
+- Add unit tests for core::model (MfClassicKey from_slice/to_hex, save_keys_to_file), core::state's DedupVec, core::paths::display_path, and core::parser's mfkey32 line parsing
 
 ### Updated
 

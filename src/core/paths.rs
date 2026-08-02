@@ -30,3 +30,7 @@ pub fn display_path(p: &std::path::Path) -> String {
         s.into_owned()
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/core_paths.rs"]
+mod tests;

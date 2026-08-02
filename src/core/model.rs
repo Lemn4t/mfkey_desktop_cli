@@ -90,3 +90,7 @@ impl Nonce {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/core_model.rs"]
+mod tests;
