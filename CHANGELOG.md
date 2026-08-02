@@ -27,6 +27,7 @@
 - Unify --plain and colored progress reporting on a single indicatif ProgressBar instead of a hand-rolled \r print in --plain mode
 - Replace UiOptions' bool plain_ui with an OutputMode enum (Fancy/Plain), leaving room for a future Json mode
 - Extract Ui's formatting logic into pure render\_\* functions, separate from the methods that print them
+- Split src/ui/mod.rs into ui/attack_report.rs and ui/auto_report.rs, grouped by which caller actually uses them
 
 ### Fixed
 
