@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.6] - 2026-07-30
+## [1.0.6] - 2026-08-02
 
 ### Added
 
@@ -28,6 +28,7 @@
 - Replace UiOptions' bool plain_ui with an OutputMode enum (Fancy/Plain), leaving room for a future Json mode
 - Extract Ui's formatting logic into pure render\_\* functions, separate from the methods that print them
 - Split src/ui/mod.rs into ui/attack_report.rs and ui/auto_report.rs, grouped by which caller actually uses them
+- Extract src/run.rs for the single-file mode's orchestration, moving save_keys_to_file into core::model and display_path into core::paths, leaving main.rs as a thin entry point
 
 ### Fixed
 

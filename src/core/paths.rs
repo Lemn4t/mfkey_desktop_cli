@@ -21,3 +21,14 @@ pub fn config_path() -> PathBuf {
         .join(PROGRAM_DIR)
         .join(CONFIG_FILE)
 }
+
+pub fn display_path(p: &std::path::Path) -> String {
+    let s = p.to_string_lossy();
+    if let Some(rest) = s.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{rest}")
+    } else if let Some(rest) = s.strip_prefix(r"\\?\") {
+        rest.to_string()
+    } else {
+        s.into_owned()
+    }
+}

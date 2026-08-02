@@ -1,4 +1,7 @@
 use crate::core::ffi::{AttackType, CNonce, MF_CLASSIC_KEY_SIZE};
+use crate::ext::result::Rslt;
+use std::fs::File;
+use std::io::Write;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MfClassicKey {
@@ -15,6 +18,17 @@ impl MfClassicKey {
     pub fn to_hex(self) -> String {
         self.data.iter().map(|b| format!("{:02X}", b)).collect()
     }
+}
+
+pub fn save_keys_to_file(path: &str, keys: &[MfClassicKey]) -> Rslt<()> {
+    if keys.is_empty() {
+        return Ok(());
+    }
+    let mut file = File::create(path)?;
+    for k in keys {
+        writeln!(file, "{}", k.to_hex())?;
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
