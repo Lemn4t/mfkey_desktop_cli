@@ -48,7 +48,7 @@
 - Route the --auto report's status glyphs through theme::glyph and omit them in plain mode, matching the attack report's glyph-free plain output
 - Extract pure varint encode/decode helpers in flipper::framing and pure key-merge helpers (parse_existing_keys, merge_key_sets) in auto::upload so both become unit-testable without a device; the wire format and upload behavior are unchanged
 - Deduplicate the timeout-polling read loop in flipper::transport behind a shared poll_read helper, reused by read_u8, read_exact, and the start_rpc_session echo scan
-- Rename the bundled C recovery library and all its symbols from crypto1 to crapto1 (csrc/crapto1.{c,h}, the CRAPTO1_H guard, Crapto1State, crapto1_recover/crapto1_prng_successor, and the internal crapto1_bit/crapto1_get_lfsr helpers), matching the crapto1 cracking library it is based on; the Crypto-1 cipher keeps its name
+- Rename the bundled C recovery library to crapto1 (csrc/crapto1.{c,h}, the CRAPTO1_H guard) with crapto1_recover as its recovery entry point, while keeping the Crypto-1 cipher primitives named crypto1_* (crypto1_bit, crypto1_get_lfsr, Crypto1State) and the bare prng_successor, following the crypto1/crapto1 split of the reference implementation
 
 ### Fixed
 

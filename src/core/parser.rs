@@ -1,4 +1,4 @@
-use crate::core::ffi::{AttackType, crapto1_prng_successor};
+use crate::core::ffi::{AttackType, prng_successor};
 use crate::core::model::Nonce;
 use crate::ext::result::Rslt;
 use std::fs::File;
@@ -38,8 +38,8 @@ fn parse_mfkey32_line(tokens: &[&str]) -> Option<Nonce> {
     let nr1_enc = token_after(tokens, "nr1").and_then(parse_hex_u32)?;
     let ar1_enc = token_after(tokens, "ar1").and_then(parse_hex_u32)?;
 
-    let p64 = unsafe { crapto1_prng_successor(nt0, 64) };
-    let p64b = unsafe { crapto1_prng_successor(nt1, 64) };
+    let p64 = unsafe { prng_successor(nt0, 64) };
+    let p64b = unsafe { prng_successor(nt1, 64) };
 
     Some(Nonce {
         attack: AttackType::Mfkey32,

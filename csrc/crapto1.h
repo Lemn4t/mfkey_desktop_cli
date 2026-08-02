@@ -69,7 +69,7 @@ typedef struct {
 
 bool crapto1_recover(const CNonce *n, uint32_t ks2, uint32_t in, const CCallbacks *cb);
 
-uint32_t crapto1_prng_successor(uint32_t x, uint32_t n);
+uint32_t prng_successor(uint32_t x, uint32_t n);
 
 #ifdef __cplusplus
 }
