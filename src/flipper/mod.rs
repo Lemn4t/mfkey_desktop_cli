@@ -1,3 +1,5 @@
+#[allow(dead_code)]
+pub mod ble;
 pub mod find;
 pub mod framing;
 pub mod session;
@@ -24,6 +26,8 @@ pub enum FlipperError {
     Timeout,
     #[error("protocol error: {0}")]
     Protocol(String),
+    #[error("bluetooth error: {0}")]
+    Ble(String),
 }
 
 pub type Result<T> = std::result::Result<T, FlipperError>;
