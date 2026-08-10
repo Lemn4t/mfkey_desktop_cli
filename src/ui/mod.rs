@@ -283,6 +283,45 @@ impl Ui {
         ));
     }
 
+    pub fn select_index(&self, prompt: &str, items: &[String]) -> Option<usize> {
+        if !self.is_plain() {
+            let theme = ColorfulTheme::default();
+            return Select::with_theme(&theme)
+                .with_prompt(prompt)
+                .items(items)
+                .default(0)
+                .interact()
+                .ok();
+        }
+
+        self.write_line(prompt);
+        for (i, item) in items.iter().enumerate() {
+            self.write_line(&format!("  [{}] {}", i + 1, item));
+        }
+
+        if !console::user_attended() {
+            return None;
+        }
+
+        loop {
+            print!("Enter number (1-{}): ", items.len());
+            let _ = std::io::stdout().flush();
+
+            let mut input = String::new();
+            if std::io::stdin().read_line(&mut input).is_err() {
+                return None;
+            }
+
+            match input.trim().parse::<usize>() {
+                Ok(n) if n >= 1 && n <= items.len() => return Some(n - 1),
+                _ => println!(
+                    "Invalid selection, please enter a number between 1 and {}.",
+                    items.len()
+                ),
+            }
+        }
+    }
+
     pub fn confirm(&self, prompt: &str, default_yes: bool) -> bool {
         if !self.is_plain() {
             let theme = ColorfulTheme::default();

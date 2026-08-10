@@ -30,18 +30,42 @@ fn resolve_logs_dir(params: &AutoParams) -> Rslt<PathBuf> {
 }
 
 fn discover_port(ui: &Ui, params: &AutoParams) -> Rslt<String> {
-    let port = match params.port.as_deref() {
-        Some(p) => p.to_string(),
-        None => {
-            ui.show_searching_for_flipper();
-            find::find_flipper_port().map_err(|e| {
-                format!(
-                    "{e}\n  Hint: specify the port manually: --auto --port <PORT>\n  \
-                     (Linux: /dev/ttyACM0, macOS: /dev/cu.usbmodemflip_*, Windows: COM3)"
-                )
-            })?
+    if let Some(p) = params.port.as_deref() {
+        ui.show_flipper_port(p);
+        return Ok(p.to_string());
+    }
+
+    ui.show_searching_for_flipper();
+    let flippers = find::find_all_flippers().context("cannot enumerate serial ports")?;
+
+    let port = match flippers.len() {
+        0 => {
+            return Err(
+                "Flipper Zero not found.\n  Hint: specify the port manually: --auto --port <PORT>\n  \
+                 (Linux: /dev/ttyACM0, macOS: /dev/cu.usbmodemflip_*, Windows: COM3)"
+                    .into(),
+            );
+        }
+        1 => flippers.into_iter().next().unwrap().port,
+        _ => {
+            let labels: Vec<String> = flippers.iter().map(|f| f.label.clone()).collect();
+            match ui.select_index("Multiple Flipper Zero devices found — select one:", &labels) {
+                Some(idx) => flippers.into_iter().nth(idx).unwrap().port,
+                None => {
+                    let list = labels
+                        .iter()
+                        .map(|l| format!("  - {l}"))
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    return Err(format!(
+                        "Multiple Flipper Zero devices found; specify one with --auto --port <PORT>:\n{list}"
+                    )
+                    .into());
+                }
+            }
         }
     };
+
     ui.show_flipper_port(&port);
     Ok(port)
 }

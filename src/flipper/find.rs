@@ -1,8 +1,13 @@
-use super::{FlipperError, Result};
+use super::Result;
 use serialport::{SerialPortType, UsbPortInfo};
 
 const FLIPPER_VID: u16 = 0x0483;
 const FLIPPER_PID: u16 = 0x5740;
+
+pub struct FlipperPort {
+    pub port: String,
+    pub label: String,
+}
 
 fn looks_like_flipper(info: &UsbPortInfo) -> bool {
     if info.vid == FLIPPER_VID && info.pid == FLIPPER_PID {
@@ -13,21 +18,30 @@ fn looks_like_flipper(info: &UsbPortInfo) -> bool {
     m.contains("flipper") || p.contains("flipper")
 }
 
-pub fn find_flipper_port() -> Result<String> {
-    find_all_flipper_ports()?
-        .into_iter()
-        .next()
-        .ok_or(FlipperError::NotFound)
+fn label_for(port: &str, usb: &UsbPortInfo) -> String {
+    let name = usb
+        .product
+        .clone()
+        .or_else(|| usb.manufacturer.clone())
+        .unwrap_or_else(|| "Flipper Zero".to_string());
+    match &usb.serial_number {
+        Some(sn) => format!("{name}  ({port}, serial {sn})"),
+        None => format!("{name}  ({port})"),
+    }
 }
 
-pub fn find_all_flipper_ports() -> Result<Vec<String>> {
+pub fn find_all_flippers() -> Result<Vec<FlipperPort>> {
     let ports = serialport::available_ports()?;
     let mut out = Vec::new();
     for p in ports {
         if let SerialPortType::UsbPort(usb) = &p.port_type
             && looks_like_flipper(usb)
         {
-            out.push(p.port_name);
+            let label = label_for(&p.port_name, usb);
+            out.push(FlipperPort {
+                port: p.port_name,
+                label,
+            });
         }
     }
     Ok(out)

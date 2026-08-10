@@ -20,8 +20,6 @@ pub enum FlipperError {
     Encode(#[from] prost::EncodeError),
     #[error("flipper command error, status={0}")]
     CommandStatus(i32),
-    #[error("Flipper Zero not found")]
-    NotFound,
     #[error("operation timed out")]
     Timeout,
     #[error("protocol error: {0}")]
