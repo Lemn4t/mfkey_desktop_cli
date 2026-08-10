@@ -20,11 +20,11 @@ pub async fn list_ble_devices() -> Result<Vec<BleDevice>> {
     let mut events = adapter
         .events()
         .await
-        .map_err(|e| crate::flipper::FlipperError::Ble(e.to_string()))?;
+        .map_err(super::ble_error)?;
     adapter
         .start_scan(ScanFilter::default())
         .await
-        .map_err(|e| crate::flipper::FlipperError::Ble(e.to_string()))?;
+        .map_err(super::ble_error)?;
 
     let deadline = tokio::time::Instant::now() + Duration::from_millis(5000);
     loop {
@@ -44,7 +44,7 @@ pub async fn list_ble_devices() -> Result<Vec<BleDevice>> {
     let peripherals = adapter
         .peripherals()
         .await
-        .map_err(|e| crate::flipper::FlipperError::Ble(e.to_string()))?;
+        .map_err(super::ble_error)?;
 
     let mut out = Vec::new();
     for p in peripherals {

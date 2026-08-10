@@ -15,7 +15,7 @@ use std::time::Duration;
 use tokio::sync::oneshot;
 
 fn map(e: impl std::fmt::Display) -> FlipperError {
-    FlipperError::Ble(e.to_string())
+    super::ble_error(e)
 }
 
 fn parse_flow_ctrl(bytes: &[u8]) -> Option<u32> {
