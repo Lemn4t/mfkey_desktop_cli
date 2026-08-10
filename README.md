@@ -28,10 +28,11 @@ Ready-made builds for Windows, Linux and macOS are available on the releases pag
 
 - ⚡ **High-performance recovery core in C**, based on [crapto1](https://github.com/RfidResearchGroup/proxmark3) — the open-source library that exploits known weaknesses in the Crypto-1 cipher (the proprietary NXP cipher used by MIFARE Classic cards) to recover keys, used across the Proxmark3/libnfc ecosystem
 - 🦀 **Thin, safe Rust layer** on top — parsing, attack orchestration, progress, and CLI
-- 🎯 Support for **three attack types**, auto-detected from the input file:
+- 🎯 Support for **four attack types**, auto-detected from the input file:
   - `mfkey32` — key recovery from two intercepted authentications (Mfkey32 / Moebius)
   - `static_nested` — attacking cards with a predictable (static) nested PRNG
   - `static_encrypted` — attacking cards where only encrypted nonces were collected
+  - `hard_nested` — attacking hardened cards (Crypto-1 with a hardened PRNG) from collected HardNested nonces
 - 🤖 **`--auto` mode** — talks to a connected Flipper Zero directly over USB: detects the port, pulls `.mfkey32.log` / `.nested.log` files, runs the attack, and uploads recovered keys and candidate dictionaries back to the device — fully hands-free
 - 🛑 Graceful `Ctrl+C` interruption at any point
 - 💾 Saves both confirmed keys and candidate key dictionaries to disk
@@ -135,7 +136,13 @@ Sec 0 key B cuid da7d3c2e nt0 b07cef37 ks0 54a0efed par0 1001 nt1 224737c4 ks1 c
 Sec 0 key A cuid 801aa11c nt0 e58455e4 nr0 761ff4ec ar0 162122ec nt1 20782e85 nr1 ecb6f04f ar1 bf19891b
 ```
 
-The tool detects which attack applies to each line automatically — you don't need to sort or split the log yourself.
+**HardNested** (Flipper Zero format — many such lines per target, `nt0` is `00000000` and there is no `dist`):
+
+```
+Sec 0 key A cuid da505f80 nt0 00000000 ks0 9c1b53f9 par0 1100
+```
+
+The tool detects which attack applies to each line automatically — you don't need to sort or split the log yourself. A single file may mix all four types (e.g. `mfkey32` + `nested` + HardNested lines together); each is routed to the right attack.
 
 ---
 
@@ -154,19 +161,22 @@ The binary will be in `target/release/`.
 > [!NOTE]
 > Flipper RPC protobuf definitions are compiled at build time with [`prost-build`](https://crates.io/crates/prost-build), using a `protoc` binary bundled via [`protoc-bin-vendored`](https://crates.io/crates/protoc-bin-vendored) — a system-wide `protoc` install is not required.
 
+> [!NOTE]
+> The HardNested attack uses a vendored C core (Proxmark3 / ChameleonUltraGUI) whose precomputed tables are unpacked by a bundled [`minlzlib`](https://github.com/ionescu007/minlzlib) XZ decoder — **no system `liblzma` is required**. On Windows/MSVC a small built-in `pthread` shim is used, so no external pthread dependency is needed either.
+
 ---
 
 ## 🧩 How it works
 
 | Layer                 | Language     | Responsibility                                              |
 | --------------------- | ------------ | ------------------------------------------------------------ |
-| Recovery core           | **C**        | LFSR state recovery, MSB-table search (crapto1-based)          |
+| Recovery core           | **C**        | LFSR state recovery, MSB-table search (crapto1-based); HardNested bitslice brute force |
 | Attack engine & parser | **Rust**     | Nonce parsing, attack orchestration, progress reporting        |
 | FFI bridge             | **Rust ↔ C** | Passing structures and callbacks between the two layers        |
 | Flipper RPC (USB)      | **Rust**     | Serial transport, protobuf framing, Storage read/write/delete   |
 | CLI & UI               | **Rust**     | Argument parsing (clap), console output, progress bar          |
 
-**Crypto-1** is the proprietary stream cipher NXP built into MIFARE Classic cards for authentication. **crapto1** is the open-source library (from the Proxmark3/RfidResearchGroup project) that exploits known cryptographic weaknesses in Crypto-1 to recover keys — this is what the C core in this repo is based on. In `--auto` mode, the tool also speaks the Flipper Zero's **Protobuf RPC** protocol over USB-CDC — it starts an RPC session and uses `Storage*` commands to list, read, write, and delete files on the device.
+**Crypto-1** is the proprietary stream cipher NXP built into MIFARE Classic cards for authentication. **crapto1** is the open-source library (from the Proxmark3/RfidResearchGroup project) that exploits known cryptographic weaknesses in Crypto-1 to recover keys — this is what the C core in this repo is based on. For **hardened** cards (which randomize their nonces to defeat the classic nested attack), the tool ships the Proxmark3 **HardNested** bitslice attack, adapted to run on the HardNested nonces Flipper Zero writes to `.nested.log`; it shares the same Crypto-1 primitives and runs in both single-file and `--auto` modes. In `--auto` mode, the tool also speaks the Flipper Zero's **Protobuf RPC** protocol over USB-CDC — it starts an RPC session and uses `Storage*` commands to list, read, write, and delete files on the device.
 
 ---
 
@@ -184,7 +194,10 @@ On first run, the tool shows this disclaimer and asks you to accept it (`y`/`N`)
 ## 🙏 Credits
 
 - [atomofiron](https://github.com/atomofiron) — major contributions to refactoring and improving the codebase
-- [Proxmark3 / RfidResearchGroup](https://github.com/RfidResearchGroup/proxmark3) — Crypto-1 / crapto1 recovery algorithm
+- [Proxmark3 / RfidResearchGroup](https://github.com/RfidResearchGroup/proxmark3) — Crypto-1 / crapto1 recovery algorithm and the HardNested attack
+- [ChameleonUltraGUI](https://github.com/GameTec-live/ChameleonUltraGUI) — cross-platform HardNested C core and its bundled minlzlib integration
+- [minlzlib](https://github.com/ionescu007/minlzlib) — self-contained XZ/LZMA2 decoder used to unpack the HardNested tables
+- [HardnestedRecovery](https://github.com/noproto/HardnestedRecovery) — reference for recovering HardNested keys from Flipper Zero `.nested.log` files
 - [mfkey / noproto](https://github.com/noproto/xero-firmware/tree/dev/applications/system/mfkey) — Flipper Zero MFKey app
 - [Flipper Zero Protobuf](https://github.com/flipperdevices/flipperzero-protobuf) — RPC protocol definitions
 
