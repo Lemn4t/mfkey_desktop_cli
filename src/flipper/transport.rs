@@ -6,15 +6,21 @@ use std::time::{Duration, Instant};
 const TIMEOUT_DRAIN: Duration = Duration::from_millis(50);
 const TIMEOUT_NORMAL: Duration = Duration::from_secs(5);
 
+pub trait RpcTransport {
+    fn read_u8(&mut self, deadline: Instant) -> Result<u8>;
+    fn read_exact(&mut self, len: usize, deadline: Instant) -> Result<Vec<u8>>;
+    fn write_all(&mut self, data: &[u8]) -> Result<()>;
+}
+
 fn is_timeout(e: &std::io::Error) -> bool {
     e.kind() == std::io::ErrorKind::TimedOut || e.raw_os_error() == Some(121)
 }
 
-pub struct Transport {
+pub struct SerialTransport {
     pub port: Box<dyn SerialPort>,
 }
 
-impl Transport {
+impl SerialTransport {
     pub fn open(port_name: &str) -> Result<Self> {
         let mut port = serialport::new(port_name, 230_400)
             .timeout(TIMEOUT_DRAIN)
@@ -87,14 +93,16 @@ impl Transport {
             }
         }
     }
+}
 
-    pub fn read_u8(&mut self, deadline: Instant) -> Result<u8> {
+impl RpcTransport for SerialTransport {
+    fn read_u8(&mut self, deadline: Instant) -> Result<u8> {
         let mut b = [0u8; 1];
         self.poll_read(&mut b, deadline)?;
         Ok(b[0])
     }
 
-    pub fn read_exact(&mut self, len: usize, deadline: Instant) -> Result<Vec<u8>> {
+    fn read_exact(&mut self, len: usize, deadline: Instant) -> Result<Vec<u8>> {
         let mut out = Vec::with_capacity(len);
         let mut tmp = vec![0u8; len];
         while out.len() < len {
@@ -108,7 +116,7 @@ impl Transport {
         Ok(out)
     }
 
-    pub fn write_all(&mut self, data: &[u8]) -> Result<()> {
+    fn write_all(&mut self, data: &[u8]) -> Result<()> {
         self.port.write_all(data)?;
         self.port.flush()?;
         Ok(())

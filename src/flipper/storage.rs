@@ -99,7 +99,7 @@ impl FlipperSession {
                 has_next,
                 content: Some(pb::main::Content::StorageWriteRequest(req)),
             };
-            write_message(&mut self.t, &msg)?;
+            write_message(&mut *self.t, &msg)?;
             offset = end;
         }
 

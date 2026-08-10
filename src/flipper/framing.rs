@@ -1,4 +1,4 @@
-use super::transport::Transport;
+use super::transport::RpcTransport;
 use super::{FlipperError, Result};
 use crate::pb;
 use prost::Message;
@@ -52,7 +52,7 @@ fn validate_frame_len(len: u64) -> Result<u64> {
     Ok(len)
 }
 
-pub fn read_message(t: &mut Transport, timeout: Duration) -> Result<pb::Main> {
+pub fn read_message(t: &mut dyn RpcTransport, timeout: Duration) -> Result<pb::Main> {
     let deadline = Instant::now() + timeout;
 
     let len = validate_frame_len(decode_varint(|| t.read_u8(deadline))?)?;
@@ -63,7 +63,7 @@ pub fn read_message(t: &mut Transport, timeout: Duration) -> Result<pb::Main> {
     Ok(msg)
 }
 
-pub fn write_message(t: &mut Transport, msg: &pb::Main) -> Result<()> {
+pub fn write_message(t: &mut dyn RpcTransport, msg: &pb::Main) -> Result<()> {
     let mut body = Vec::with_capacity(msg.encoded_len());
     msg.encode(&mut body).map_err(FlipperError::Encode)?;
 

@@ -1,18 +1,22 @@
 use super::framing::{read_message, write_message};
-use super::transport::Transport;
+use super::transport::{RpcTransport, SerialTransport};
 use super::{FlipperError, Result};
 use crate::{pb, pb_system};
 use std::time::Duration;
 
 pub struct FlipperSession {
-    pub(crate) t: Transport,
+    pub(crate) t: Box<dyn RpcTransport>,
     next_id: u32,
 }
 
 impl FlipperSession {
     pub fn open(port_name: &str) -> Result<Self> {
-        let mut t = Transport::open(port_name)?;
+        let mut t = SerialTransport::open(port_name)?;
         t.start_rpc_session()?;
+        Self::from_transport(Box::new(t))
+    }
+
+    pub fn from_transport(t: Box<dyn RpcTransport>) -> Result<Self> {
         let mut s = Self { t, next_id: 1 };
         s.ping()?;
         Ok(s)
@@ -35,13 +39,13 @@ impl FlipperSession {
             has_next: false,
             content: Some(content),
         };
-        write_message(&mut self.t, &msg)?;
+        write_message(&mut *self.t, &msg)?;
         Ok(id)
     }
 
     fn recv_for(&mut self, id: u32, timeout: Duration) -> Result<pb::Main> {
         loop {
-            let msg = read_message(&mut self.t, timeout)?;
+            let msg = read_message(&mut *self.t, timeout)?;
             if msg.command_id == id {
                 return Ok(msg);
             }
