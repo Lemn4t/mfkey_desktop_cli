@@ -177,6 +177,17 @@ The tool detects which attack applies to each line automatically — you don't n
 
 Requires the [Rust toolchain](https://rustup.rs/) and a C compiler (MSVC on Windows, GCC/Clang elsewhere).
 
+On **Linux**, the USB and BLE backends link system libraries, so install their development headers first:
+
+```bash
+# Debian/Ubuntu
+sudo apt install pkg-config libudev-dev libdbus-1-dev
+# Fedora
+sudo dnf install pkgconf-pkg-config systemd-devel dbus-devel
+```
+
+`libdbus-1-dev` is needed because Bluetooth LE talks to BlueZ over D-Bus. Windows and macOS use their native BLE stacks and need no extra packages.
+
 ```bash
 git clone https://github.com/phntm-lab/mfkey_desktop_cli.git
 cd mfkey_desktop_cli
