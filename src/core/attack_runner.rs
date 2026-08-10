@@ -1,8 +1,8 @@
-use crate::core::engine::{self, DictOutput};
 use crate::core::model::MfClassicKey;
+use crate::core::outcome::AttackOutcome;
 use crate::core::parser;
 use crate::core::reporter::Reporter;
-use crate::core::state::AttackState;
+use crate::core::solver::Crapto1Solver;
 use crate::ext::result::Rslt;
 use crate::ui::Ui;
 use std::fs;
@@ -11,15 +11,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-pub struct FileAttackResult {
-    pub found_keys: Vec<MfClassicKey>,
-    pub candidate_total_count: usize,
-    pub dict_outputs: Vec<DictOutput>,
-}
-
 pub enum FileAttackOutcome {
     NoUsableNonces { hardnested_detected: bool },
-    Ran(FileAttackResult),
+    Ran(AttackOutcome),
 }
 
 pub fn run_file_attack(
@@ -54,9 +48,6 @@ pub fn run_file_attack(
     }
     ui.show_start();
 
-    let reporter: Arc<dyn Reporter> = ui.clone();
-    let mut attack_state = AttackState::new(reporter, Arc::clone(stop));
-
     let mut save_dict =
         |uid: u32, keys: &[(u8, MfClassicKey)], dir: Option<&str>| -> Option<String> {
             let path = candidate_dict_path(uid, dir);
@@ -70,18 +61,22 @@ pub fn run_file_attack(
             }
         };
 
-    let (candidate_total_count, dict_outputs) =
-        engine::run_attack(&mut attack_state, &nonces, dict_output_dir, &mut save_dict);
+    let reporter: Arc<dyn Reporter> = ui.clone();
+    let outcome = Crapto1Solver::run(
+        reporter,
+        Arc::clone(stop),
+        &nonces,
+        dict_output_dir,
+        &mut save_dict,
+    );
 
-    let nonce_count = nonces.len();
-    let found_count = attack_state.found_keys.len();
-    ui.show_summary(nonce_count, found_count, candidate_total_count);
+    ui.show_summary(
+        nonces.len(),
+        outcome.found_keys.len(),
+        outcome.candidate_total_count,
+    );
 
-    Ok(FileAttackOutcome::Ran(FileAttackResult {
-        found_keys: attack_state.found_keys.into_vec(),
-        candidate_total_count,
-        dict_outputs,
-    }))
+    Ok(FileAttackOutcome::Ran(outcome))
 }
 
 fn candidate_dict_path(uid: u32, output_dir: Option<&str>) -> PathBuf {

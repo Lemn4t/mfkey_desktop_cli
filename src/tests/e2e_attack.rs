@@ -47,7 +47,7 @@ fn run_fixture(fixture: &str, dict_dir: &Path) -> FileAttackOutcome {
     .expect("run_file_attack should succeed on a readable fixture")
 }
 
-fn found_hex(result: &FileAttackResult) -> Vec<String> {
+fn found_hex(result: &AttackOutcome) -> Vec<String> {
     result.found_keys.iter().map(|k| k.to_hex()).collect()
 }
 
