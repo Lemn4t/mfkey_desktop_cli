@@ -231,3 +231,7 @@ pub fn run_attack(
 
     (candidate_total_count, dict_outputs)
 }
+
+#[cfg(test)]
+#[path = "../tests/engine_passes.rs"]
+mod tests;

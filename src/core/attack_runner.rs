@@ -95,3 +95,7 @@ fn write_candidate_dict(path: &Path, keys: &[(u8, MfClassicKey)]) -> std::io::Re
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "../tests/e2e_attack.rs"]
+mod e2e_tests;
