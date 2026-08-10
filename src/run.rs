@@ -100,3 +100,7 @@ pub fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) -> Rslt<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "tests/run_regression.rs"]
+mod tests;

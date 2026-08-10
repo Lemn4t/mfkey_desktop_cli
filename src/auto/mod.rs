@@ -180,3 +180,7 @@ pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<
 
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "../tests/auto_regression.rs"]
+mod tests;
