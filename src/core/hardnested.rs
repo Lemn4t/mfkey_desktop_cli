@@ -97,7 +97,11 @@ impl HardNestedSolver {
                 )
             };
             if res == 1 {
-                found.push(key_from_u64(out_key));
+                let key = key_from_u64(out_key);
+                reporter.hardnested_result(&label, Some(&key));
+                found.push(key);
+            } else {
+                reporter.hardnested_result(&label, None);
             }
         }
 

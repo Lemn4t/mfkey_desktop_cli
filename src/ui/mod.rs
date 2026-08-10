@@ -436,6 +436,10 @@ impl crate::core::reporter::Reporter for Ui {
         self.hardnested_status(line);
     }
 
+    fn hardnested_result(&self, label: &str, key: Option<&crate::core::model::MfClassicKey>) {
+        self.show_hardnested_result(label, key);
+    }
+
     fn hardnested_end(&self) {
         Ui::hardnested_end(self);
     }

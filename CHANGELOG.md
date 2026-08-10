@@ -19,6 +19,8 @@
   scrolling the raw engine table.
 - Unrecognized log lines are now reported ("N unrecognized line(s) were
   skipped") instead of being dropped silently.
+- HardNested now reports a per-target result — the recovered key, or "no key
+  found" — attributed to each UID/sector/key-type target.
 
 ### Fixed
 

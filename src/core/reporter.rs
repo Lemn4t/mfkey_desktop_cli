@@ -19,5 +19,7 @@ pub trait Reporter: Send + Sync {
 
     fn hardnested_line(&self, _line: &str) {}
 
+    fn hardnested_result(&self, _label: &str, _key: Option<&MfClassicKey>) {}
+
     fn hardnested_end(&self) {}
 }

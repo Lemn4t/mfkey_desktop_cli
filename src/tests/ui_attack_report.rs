@@ -10,6 +10,22 @@ fn force_color() {
 }
 
 #[test]
+fn hardnested_result_plain_shows_key_or_not_found() {
+    let k = key([0x75, 0x92, 0x75, 0x92, 0x75, 0x92]);
+    let ok = render_hardnested_result(
+        OutputMode::Plain,
+        "UID 0xDA505F80 sector 0 key A",
+        Some(&k),
+    );
+    assert!(ok.contains("759275927592"));
+    assert!(ok.contains("sector 0"));
+
+    let no = render_hardnested_result(OutputMode::Plain, "UID 0x00000000 sector 1 key B", None);
+    assert!(no.to_lowercase().contains("no key found"));
+    assert!(no.contains("sector 1"));
+}
+
+#[test]
 fn unrecognized_lines_plain_mentions_count() {
     let s = render_unrecognized_lines(OutputMode::Plain, 3);
     assert!(s.contains("3 unrecognized line(s)"));

@@ -72,6 +72,25 @@ fn render_loading_complete(mode: OutputMode, total: usize) -> String {
     )
 }
 
+fn render_hardnested_result(mode: OutputMode, label: &str, key: Option<&MfClassicKey>) -> String {
+    let plain = mode.is_plain();
+    match key {
+        Some(k) => {
+            let line = format!("HardNested {label}: {}", k.to_hex());
+            let colored = theme::colored(&line, MessageKind::Success, plain);
+            if plain {
+                colored
+            } else {
+                format!("{} {}", glyph::CHECK, colored)
+            }
+        }
+        None => {
+            let line = format!("HardNested {label}: no key found");
+            theme::colored(&line, MessageKind::Warning, plain)
+        }
+    }
+}
+
 fn render_unrecognized_lines(mode: OutputMode, count: usize) -> String {
     let msg = format!("Note: {count} unrecognized line(s) were skipped");
     theme::colored(&msg, MessageKind::Warning, mode.is_plain())
@@ -278,6 +297,11 @@ impl Ui {
 
     pub fn show_unrecognized_lines(&self, count: usize) {
         self.write_line(&render_unrecognized_lines(self.opts.mode, count));
+    }
+
+    pub fn show_hardnested_result(&self, label: &str, key: Option<&MfClassicKey>) {
+        self.hardnested_end();
+        self.write_line(&render_hardnested_result(self.opts.mode, label, key));
     }
 
     pub fn show_hardnested_loaded(&self, count: usize, targets: &[(u32, u8)]) {
