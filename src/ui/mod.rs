@@ -266,6 +266,45 @@ impl Ui {
         }
     }
 
+    pub fn hardnested_begin(&self, index: usize, total: usize, label: &str) {
+        if self.is_plain() {
+            self.write_line(&format!("HardNested [{index}/{total}] {label}"));
+            return;
+        }
+        let pb = ProgressBar::new_spinner();
+        let style = ProgressStyle::with_template("{spinner:.cyan} {prefix:.bold.dim} {msg}")
+            .unwrap_or_else(|_| ProgressStyle::default_spinner());
+        pb.set_style(style);
+        pb.set_prefix(format!("▸ HardNested [{index}/{total}] {label}"));
+        pb.enable_steady_tick(Duration::from_millis(120));
+
+        let mut inner = self.inner.lock().unwrap();
+        if let Some(old) = inner.bar.replace(pb) {
+            old.finish_and_clear();
+        }
+    }
+
+    pub fn hardnested_status(&self, line: &str) {
+        if self.is_plain() {
+            self.write_line(line);
+            return;
+        }
+        let inner = self.inner.lock().unwrap();
+        if let Some(pb) = inner.bar.as_ref() {
+            pb.set_message(line.to_string());
+        }
+    }
+
+    pub fn hardnested_end(&self) {
+        if self.is_plain() {
+            return;
+        }
+        let mut inner = self.inner.lock().unwrap();
+        if let Some(pb) = inner.bar.take() {
+            pb.finish_and_clear();
+        }
+    }
+
     pub fn show_disclaimer(&self, text: &str) {
         self.write_line(&theme::accent(text, self.is_plain()));
     }
@@ -389,8 +428,16 @@ impl crate::core::reporter::Reporter for Ui {
         self.show_found_key(key);
     }
 
+    fn hardnested_begin(&self, index: usize, total: usize, label: &str) {
+        Ui::hardnested_begin(self, index, total, label);
+    }
+
     fn hardnested_line(&self, line: &str) {
-        self.write_line(line);
+        self.hardnested_status(line);
+    }
+
+    fn hardnested_end(&self) {
+        Ui::hardnested_end(self);
     }
 }
 

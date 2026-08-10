@@ -59,8 +59,7 @@ impl HardNestedSolver {
     ) -> Vec<MfClassicKey> {
         let mut groups: BTreeMap<(u32, u8), Vec<HnNonce>> = BTreeMap::new();
         for n in nonces {
-            let key_type = n.key_idx & 1;
-            groups.entry((n.uid, key_type)).or_default().push(HnNonce {
+            groups.entry((n.uid, n.key_idx)).or_default().push(HnNonce {
                 nt_enc: n.nt0 ^ n.ks0,
                 par: n.par0,
             });
@@ -73,11 +72,18 @@ impl HardNestedSolver {
             user,
         };
 
+        let total = groups.len();
         let mut found: Vec<MfClassicKey> = Vec::new();
-        for ((uid, key_type), group) in groups {
+        for (idx, ((uid, key_idx), group)) in groups.into_iter().enumerate() {
             if stop.load(Ordering::SeqCst) {
                 break;
             }
+
+            let key_type = key_idx & 1;
+            let sector = key_idx / 2;
+            let key_letter = if key_type == 0 { "A" } else { "B" };
+            let label = format!("UID 0x{uid:08X} sector {sector} key {key_letter}");
+            reporter.hardnested_begin(idx + 1, total, &label);
 
             let mut out_key: u64 = 0;
             let res = unsafe {
@@ -94,6 +100,8 @@ impl HardNestedSolver {
                 found.push(key_from_u64(out_key));
             }
         }
+
+        reporter.hardnested_end();
         found
     }
 }

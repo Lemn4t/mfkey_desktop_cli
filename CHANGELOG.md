@@ -14,5 +14,12 @@
 - Releases now include a `SHA256SUMS` file, and the README documents how to
   verify downloads and why antivirus engines may flag the tool as a false
   positive.
+- HardNested progress is now shown as a single, in-place status line with a
+  per-target counter ("HardNested [k/N] …") in the interactive UI, instead of
+  scrolling the raw engine table.
 
 ### Fixed
+
+- HardNested nonces are now grouped per (UID, sector, key type) target rather
+  than per (UID, key type), so logs covering several sectors recover each key
+  correctly instead of mixing their nonces.
