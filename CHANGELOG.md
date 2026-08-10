@@ -21,6 +21,9 @@
   skipped") instead of being dropped silently.
 - HardNested now reports a per-target result — the recovered key, or "no key
   found" — attributed to each UID/sector/key-type target.
+- `--auto` now shows an upload progress bar for large files (the big
+  `static_encrypted` candidate dictionaries), so long USB/BLE transfers no
+  longer look frozen.
 
 ### Fixed
 

@@ -53,10 +53,17 @@ impl FlipperSession {
         Ok(data)
     }
 
-    pub fn storage_write(&mut self, path: &str, data: &[u8]) -> Result<()> {
+    pub fn storage_write_with_progress(
+        &mut self,
+        path: &str,
+        data: &[u8],
+        mut on_progress: impl FnMut(usize, usize),
+    ) -> Result<()> {
+        use super::framing::write_message;
         const CHUNK: usize = 512;
+        let total = data.len();
 
-        if data.len() <= CHUNK {
+        if total <= CHUNK {
             let req = pb_storage::WriteRequest {
                 path: path.to_string(),
                 file: Some(pb_storage::File {
@@ -68,21 +75,15 @@ impl FlipperSession {
                 pb::main::Content::StorageWriteRequest(req),
                 Duration::from_secs(30),
             )?;
+            on_progress(total, total);
             return Ok(());
         }
 
-        self.storage_write_chunked(path, data, CHUNK)
-    }
-
-    fn storage_write_chunked(&mut self, path: &str, data: &[u8], chunk: usize) -> Result<()> {
-        use super::framing::write_message;
-
         let id = self.alloc_id_pub();
-        let total = data.len();
         let mut offset = 0usize;
 
         while offset < total {
-            let end = (offset + chunk).min(total);
+            let end = (offset + CHUNK).min(total);
             let part = &data[offset..end];
             let has_next = end < total;
 
@@ -101,6 +102,7 @@ impl FlipperSession {
             };
             write_message(&mut *self.t, &msg)?;
             offset = end;
+            on_progress(offset, total);
         }
 
         let resp = self.recv_for_pub(id, Duration::from_secs(30))?;

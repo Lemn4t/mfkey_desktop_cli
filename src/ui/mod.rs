@@ -305,6 +305,47 @@ impl Ui {
         }
     }
 
+    pub fn begin_transfer(&self, label: &str, total: usize) {
+        if self.is_plain() {
+            self.write_line(&format!("Uploading {label} ({total} bytes)..."));
+            return;
+        }
+        let pb = ProgressBar::new(total.max(1) as u64);
+        let style = ProgressStyle::with_template(
+            "{prefix:.bold.dim} [{bar:30.cyan/blue}] {bytes}/{total_bytes}",
+        )
+        .unwrap_or_else(|_| ProgressStyle::default_bar())
+        .progress_chars("█▓░");
+        pb.set_style(style);
+        pb.set_prefix(format!("▸ Uploading {label}"));
+        pb.enable_steady_tick(Duration::from_millis(120));
+
+        let mut inner = self.inner.lock().unwrap();
+        if let Some(old) = inner.bar.replace(pb) {
+            old.finish_and_clear();
+        }
+    }
+
+    pub fn update_transfer(&self, done: usize) {
+        if self.is_plain() {
+            return;
+        }
+        let inner = self.inner.lock().unwrap();
+        if let Some(pb) = inner.bar.as_ref() {
+            pb.set_position(done as u64);
+        }
+    }
+
+    pub fn end_transfer(&self) {
+        if self.is_plain() {
+            return;
+        }
+        let mut inner = self.inner.lock().unwrap();
+        if let Some(pb) = inner.bar.take() {
+            pb.finish_and_clear();
+        }
+    }
+
     pub fn show_disclaimer(&self, text: &str) {
         self.write_line(&theme::accent(text, self.is_plain()));
     }

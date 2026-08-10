@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 
 const ASSETS_DIR: &str = "/ext/nfc/assets";
 const RESULT_REMOTE_NAME: &str = "mf_classic_dict_user.nfc";
+const TRANSFER_BAR_THRESHOLD: usize = 64 * 1024;
 
 fn parse_existing_keys(data: &[u8]) -> BTreeSet<String> {
     let mut set = BTreeSet::new();
@@ -69,7 +70,17 @@ pub fn upload_dicts(ui: &Ui, sess: &mut FlipperSession, local_dicts: &[PathBuf])
 
         let _ = sess.storage_delete(&remote_dict, false);
 
-        match sess.storage_write(&remote_dict, &data) {
+        let show_progress = data.len() > TRANSFER_BAR_THRESHOLD;
+        if show_progress {
+            ui.begin_transfer(&file_name, data.len());
+        }
+        let res =
+            sess.storage_write_with_progress(&remote_dict, &data, |sent, _| ui.update_transfer(sent));
+        if show_progress {
+            ui.end_transfer();
+        }
+
+        match res {
             Ok(_) => ui.show_dict_uploaded(&remote_dict),
             Err(e) => ui.show_error(&format!("warning: upload {remote_dict} failed: {e}")),
         }
@@ -135,8 +146,17 @@ pub fn merge_and_upload_keys(
 
     let _ = sess.storage_delete(&remote_out, false);
     ui.show_uploading_full_dict(&remote_out);
-    sess.storage_write(&remote_out, &upload)
-        .with_context(|| format!("upload {remote_out}"))?;
+
+    let show_progress = upload.len() > TRANSFER_BAR_THRESHOLD;
+    if show_progress {
+        ui.begin_transfer(RESULT_REMOTE_NAME, upload.len());
+    }
+    let res =
+        sess.storage_write_with_progress(&remote_out, &upload, |sent, _| ui.update_transfer(sent));
+    if show_progress {
+        ui.end_transfer();
+    }
+    res.with_context(|| format!("upload {remote_out}"))?;
 
     ui.show_upload_done(&remote_out);
     ui.show_local_copies(logs_dir);
