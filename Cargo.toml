@@ -1,6 +1,6 @@
 [package]
 name = "mfkey_desktop_cli"
-version = "1.0.6"
+version = "1.0.7"
 edition = "2024"
 authors = ["Lemn4t"]
 description = "Desktop tool for recovering MIFARE Classic keys, modified to match Flipper Zero mfkey behavior."
