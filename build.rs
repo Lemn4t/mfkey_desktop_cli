@@ -55,6 +55,7 @@ fn main() {
     hn.include(vendor);
     hn.include(format!("{vendor}/minlzlib"));
     hn.include(format!("{vendor}/pm3"));
+    hn.file("csrc/hardnested_entry.c");
     hn.file(format!("{vendor}/hardnested.c"));
     hn.file(format!("{vendor}/hardnested/hardnested_bf_core.c"));
     hn.file(format!("{vendor}/hardnested/hardnested_bitarray_core.c"));
