@@ -36,6 +36,17 @@ pub fn run_file_attack(
         return Ok(FileAttackOutcome::NoUsableNonces);
     }
 
+    if !hardnested.is_empty() {
+        let mut targets: Vec<(u32, u8)> = Vec::new();
+        for n in &hardnested {
+            let target = (n.uid, n.key_idx);
+            if !targets.contains(&target) {
+                targets.push(target);
+            }
+        }
+        ui.show_hardnested_loaded(hardnested.len(), &targets);
+    }
+
     let total = nonces.len() + hardnested.len();
     ui.show_loading_complete(total);
     ui.show_start();

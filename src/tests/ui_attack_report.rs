@@ -10,6 +10,23 @@ fn force_color() {
 }
 
 #[test]
+fn hardnested_loaded_plain_lists_count_and_targets() {
+    let lines = render_hardnested_loaded(OutputMode::Plain, 1740, &[(0xDA50_5F80, 0)]);
+    assert_eq!(lines.len(), 2);
+    assert_eq!(lines[0], "Detected 1740 HardNested nonce(s) — 1 target(s)");
+    assert!(lines[1].contains("UID 0xDA505F80"));
+    assert!(lines[1].contains("sector 0"));
+    assert!(lines[1].contains("key A"));
+}
+
+#[test]
+fn hardnested_loaded_maps_key_idx_to_sector_and_key_type() {
+    let lines = render_hardnested_loaded(OutputMode::Plain, 4, &[(1, 3)]);
+    assert!(lines[1].contains("sector 1"));
+    assert!(lines[1].contains("key B"));
+}
+
+#[test]
 fn config_plain_has_exact_labels_no_dict_dir() {
     let lines = render_config(OutputMode::Plain, "in.log", "out.txt", None);
     assert_eq!(lines[0], "Input file:  in.log");

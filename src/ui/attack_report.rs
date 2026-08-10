@@ -72,6 +72,38 @@ fn render_loading_complete(mode: OutputMode, total: usize) -> String {
     )
 }
 
+fn render_hardnested_loaded(mode: OutputMode, count: usize, targets: &[(u32, u8)]) -> Vec<String> {
+    let plain = mode.is_plain();
+    let mut lines = Vec::new();
+
+    let header = format!(
+        "Detected {} HardNested nonce(s) — {} target(s)",
+        count,
+        targets.len()
+    );
+    if plain {
+        lines.push(header);
+    } else {
+        lines.push(format!(
+            "{} {}",
+            theme::indent(1, glyph::TREE),
+            theme::colored(&header, MessageKind::Warning, plain)
+        ));
+    }
+
+    for (uid, key_idx) in targets {
+        let sector = key_idx / 2;
+        let key = if key_idx & 1 == 0 { "A" } else { "B" };
+        let detail = format!("UID 0x{:08X}  sector {}  key {}", uid, sector, key);
+        if plain {
+            lines.push(format!("  {}", detail));
+        } else {
+            lines.push(format!("{} {}", theme::indent(2, glyph::BULLET), detail));
+        }
+    }
+    lines
+}
+
 fn render_start(mode: OutputMode) -> Vec<String> {
     let plain = mode.is_plain();
     if plain {
@@ -237,6 +269,12 @@ impl Ui {
 
     pub fn show_loading_complete(&self, total: usize) {
         self.write_line(&render_loading_complete(self.opts.mode, total));
+    }
+
+    pub fn show_hardnested_loaded(&self, count: usize, targets: &[(u32, u8)]) {
+        for line in render_hardnested_loaded(self.opts.mode, count, targets) {
+            self.write_line(&line);
+        }
     }
 
     pub fn show_start(&self) {
