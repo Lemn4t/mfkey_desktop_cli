@@ -26,6 +26,20 @@ Ready-made builds for Windows, Linux and macOS are available on the releases pag
 
 ---
 
+## 🔒 Verifying downloads & antivirus
+
+Every release ships a `SHA256SUMS` file. After downloading, verify the binary against it:
+
+```bash
+sha256sum -c SHA256SUMS              # Linux/macOS
+certutil -hashfile <file> SHA256     # Windows (compare against SHA256SUMS)
+```
+
+> [!NOTE]
+> Because this is a MIFARE **key-recovery** tool, some antivirus engines may flag the binary as a **false positive** or classify it as a "HackTool/PUA". The project is **open-source** — you can build it yourself — and the released binaries are currently **unsigned**, so their reputation with Windows SmartScreen/Defender builds up over time. Verify the checksum above; if your antivirus flags it, consider reporting the false positive to the vendor.
+
+---
+
 ## ✨ Features
 
 - ⚡ **High-performance recovery core in C**, based on [crapto1](https://github.com/RfidResearchGroup/proxmark3) — the open-source library that exploits known weaknesses in the Crypto-1 cipher (the proprietary NXP cipher used by MIFARE Classic cards) to recover keys, used across the Proxmark3/libnfc ecosystem

@@ -11,4 +11,8 @@
 
 ### Changed
 
+- Releases now include a `SHA256SUMS` file, and the README documents how to
+  verify downloads and why antivirus engines may flag the tool as a false
+  positive.
+
 ### Fixed

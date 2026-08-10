@@ -147,6 +147,34 @@ jobs:
           find artifacts -type f -exec cp {} release/ \;
           ls -la release/
 
+      - name: Generate checksums and notes footer
+        shell: bash
+        run: |
+          cd release
+          sha256sum mfkey_desktop_cli_* > SHA256SUMS
+          cd ..
+          echo "----- SHA256SUMS -----"
+          cat release/SHA256SUMS
+
+          if [[ -f RELEASE_NOTES.md ]]; then
+            {
+              echo ""
+              echo "---"
+              echo ""
+              echo "### 🔒 Verifying your download"
+              echo ""
+              echo "SHA-256 checksums are attached as \`SHA256SUMS\`:"
+              echo ""
+              echo '```'
+              cat release/SHA256SUMS
+              echo '```'
+              echo ""
+              echo "Verify with \`sha256sum -c SHA256SUMS\` (Linux/macOS) or \`certutil -hashfile <file> SHA256\` (Windows)."
+              echo ""
+              echo "> **Antivirus note:** as a MIFARE key-recovery tool, this binary may be flagged as a false positive or as \"HackTool/PUA\" by some antivirus engines. It is open-source (build it yourself) and the binaries are unsigned — verify the checksum above and, if needed, report the false positive to your AV vendor."
+            } >> RELEASE_NOTES.md
+          fi
+
       - name: Create / update release (from CHANGELOG)
         if: steps.changelog.outputs.found == 'true'
         uses: softprops/action-gh-release@v2
