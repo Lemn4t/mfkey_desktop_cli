@@ -148,7 +148,7 @@ fn classify(trimmed: &str, tokens: &[&str]) -> LineKind {
     if is_hardnested_line(trimmed, tokens) {
         return LineKind::HardNested;
     }
-    if trimmed.contains("dist 0") {
+    if tokens.contains(&"dist") {
         return LineKind::Nested;
     }
     LineKind::Unknown

@@ -77,6 +77,29 @@ fn parse_nested_line_missing_required_field_returns_none() {
 }
 
 #[test]
+fn load_nested_nonces_accepts_weak_nested_with_nonzero_dist() {
+    let content = "Sec 5 key A cuid 7c30d979 nt0 214904f0 ks0 c03823d1 par0 0000 \
+                    nt1 f69baa3a ks1 8a2107ad par1 1010 dist 12\n";
+    let path = std::env::temp_dir().join(format!(
+        "mfkey_parser_weak_{}.log",
+        std::process::id()
+    ));
+    {
+        let mut f = std::fs::File::create(&path).unwrap();
+        f.write_all(content.as_bytes()).unwrap();
+    }
+
+    let set = load_nested_nonces(&path, |_, _, _| {}).unwrap();
+
+    let _ = std::fs::remove_file(&path);
+
+    assert_eq!(set.nonces.len(), 1);
+    assert_eq!(set.nonces[0].attack, AttackType::StaticNested);
+    assert_eq!(set.nonces[0].key_idx, 10);
+    assert!(!set.hardnested_detected);
+}
+
+#[test]
 fn parse_mfkey32_line_extracts_all_fields() {
     let line = "Sec 0 key A cuid 7a962390 nt0 aabbccdd nr0 11223344 ar0 55667788 nt1 aaaa1111 nr1 bbbb2222 ar1 cccc3333";
     let nonce = parse_mfkey32_line(&tokens_of(line)).expect("should parse");
