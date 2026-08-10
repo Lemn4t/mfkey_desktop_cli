@@ -6,4 +6,5 @@ pub mod ffi;
 pub mod model;
 pub mod parser;
 pub mod paths;
+pub mod reporter;
 pub mod state;

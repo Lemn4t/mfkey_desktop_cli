@@ -321,6 +321,36 @@ impl Ui {
     }
 }
 
+impl crate::core::reporter::Reporter for Ui {
+    fn begin_progress(&self, total_nonces: usize) {
+        Ui::begin_progress(self, total_nonces);
+    }
+
+    fn update_progress(
+        &self,
+        nonce_current: usize,
+        nonce_total: usize,
+        msb_current: usize,
+        msb_total: usize,
+        stage_progress: f32,
+        uid: u32,
+    ) {
+        Ui::update_progress(
+            self,
+            nonce_current,
+            nonce_total,
+            msb_current,
+            msb_total,
+            stage_progress,
+            uid,
+        );
+    }
+
+    fn found_key(&self, key: &crate::core::model::MfClassicKey) {
+        self.show_found_key(key);
+    }
+}
+
 #[cfg(test)]
 #[path = "../tests/ui_mod.rs"]
 mod tests;

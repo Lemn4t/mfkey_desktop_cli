@@ -1,5 +1,5 @@
 use crate::core::model::MfClassicKey;
-use crate::ui::Ui;
+use crate::core::reporter::Reporter;
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::ops::Deref;
@@ -63,17 +63,17 @@ pub struct AttackContext {
     pub stop: Arc<AtomicBool>,
     pub processed: AtomicUsize,
     pub total_nonces: usize,
-    pub ui: Arc<Ui>,
+    pub reporter: Arc<dyn Reporter>,
     pub found_seen: Mutex<HashSet<MfClassicKey>>,
 }
 
 impl AttackContext {
-    pub fn new(ui: Arc<Ui>, stop: Arc<AtomicBool>, total_nonces: usize) -> Self {
+    pub fn new(reporter: Arc<dyn Reporter>, stop: Arc<AtomicBool>, total_nonces: usize) -> Self {
         AttackContext {
             stop,
             processed: AtomicUsize::new(0),
             total_nonces,
-            ui,
+            reporter,
             found_seen: Mutex::new(HashSet::new()),
         }
     }
@@ -126,16 +126,16 @@ pub struct AttackState {
     pub candidate_keys: DedupVec<(u8, MfClassicKey)>,
 
     pub stop: Arc<AtomicBool>,
-    pub ui: Arc<Ui>,
+    pub reporter: Arc<dyn Reporter>,
 }
 
 impl AttackState {
-    pub fn new(ui: Arc<Ui>, stop: Arc<AtomicBool>) -> Self {
+    pub fn new(reporter: Arc<dyn Reporter>, stop: Arc<AtomicBool>) -> Self {
         AttackState {
             found_keys: DedupVec::new(),
             candidate_keys: DedupVec::new(),
             stop,
-            ui,
+            reporter,
         }
     }
 

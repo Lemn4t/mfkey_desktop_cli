@@ -19,7 +19,7 @@ extern "C" fn cb_found_key(key6: *const u8, user: *mut c_void) {
     state.add_found_key(key);
 
     if state.ctx.register_found(key) {
-        state.ctx.ui.show_found_key(&key);
+        state.ctx.reporter.found_key(&key);
     }
 }
 
@@ -44,7 +44,7 @@ extern "C" fn cb_progress(
     }
     let state = unsafe { &*(user as *const TaskState) };
     let done = state.ctx.processed.load(Ordering::Relaxed);
-    state.ctx.ui.update_progress(
+    state.ctx.reporter.update_progress(
         done,
         state.total_nonces,
         msb_round as usize,
@@ -201,9 +201,13 @@ pub fn run_attack(
     dict_output_dir: Option<&str>,
     save_dict: &mut SaveDictFn,
 ) -> (usize, Vec<DictOutput>) {
-    let ctx = AttackContext::new(Arc::clone(&state.ui), Arc::clone(&state.stop), nonces.len());
+    let ctx = AttackContext::new(
+        Arc::clone(&state.reporter),
+        Arc::clone(&state.stop),
+        nonces.len(),
+    );
 
-    state.ui.begin_progress(nonces.len());
+    state.reporter.begin_progress(nonces.len());
 
     run_pass(&ctx, state, nonces, AttackType::Mfkey32, |nonce| {
         (nonce.ar0_enc ^ nonce.p64, 0)

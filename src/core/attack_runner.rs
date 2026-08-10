@@ -1,6 +1,7 @@
 use crate::core::engine::{self, DictOutput};
 use crate::core::model::MfClassicKey;
 use crate::core::parser;
+use crate::core::reporter::Reporter;
 use crate::core::state::AttackState;
 use crate::ext::result::Rslt;
 use crate::ui::Ui;
@@ -51,7 +52,8 @@ pub fn run_file_attack(
     }
     ui.show_start();
 
-    let mut attack_state = AttackState::new(Arc::clone(ui), Arc::clone(stop));
+    let reporter: Arc<dyn Reporter> = ui.clone();
+    let mut attack_state = AttackState::new(reporter, Arc::clone(stop));
 
     let mut save_dict =
         |uid: u32, keys: &[(u8, MfClassicKey)], dir: Option<&str>| -> Option<String> {
