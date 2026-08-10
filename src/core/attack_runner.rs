@@ -32,6 +32,10 @@ pub fn run_file_attack(
     let nonces = nonce_set.nonces;
     let hardnested = nonce_set.hardnested;
 
+    if nonce_set.unrecognized > 0 {
+        ui.show_unrecognized_lines(nonce_set.unrecognized);
+    }
+
     if nonces.is_empty() && hardnested.is_empty() {
         return Ok(FileAttackOutcome::NoUsableNonces);
     }

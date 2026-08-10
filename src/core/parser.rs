@@ -192,11 +192,15 @@ where
             LineKind::Mfkey32 => {
                 if let Some(nonce) = parse_mfkey32_line(&tokens) {
                     record_nonce(&mut set.nonces, nonce, &mut on_loaded);
+                } else {
+                    set.unrecognized += 1;
                 }
             }
             LineKind::Nested => {
                 if let Some(nonce) = parse_nested_line(&tokens) {
                     record_nonce(&mut set.nonces, nonce, &mut on_loaded);
+                } else {
+                    set.unrecognized += 1;
                 }
             }
             LineKind::HardNested => {
@@ -205,7 +209,9 @@ where
                     set.hardnested.push(hn);
                 }
             }
-            LineKind::Unknown => {}
+            LineKind::Unknown => {
+                set.unrecognized += 1;
+            }
         }
     }
 

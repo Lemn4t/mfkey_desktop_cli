@@ -10,6 +10,12 @@ fn force_color() {
 }
 
 #[test]
+fn unrecognized_lines_plain_mentions_count() {
+    let s = render_unrecognized_lines(OutputMode::Plain, 3);
+    assert!(s.contains("3 unrecognized line(s)"));
+}
+
+#[test]
 fn hardnested_loaded_plain_lists_count_and_targets() {
     let lines = render_hardnested_loaded(OutputMode::Plain, 1740, &[(0xDA50_5F80, 0)]);
     assert_eq!(lines.len(), 2);

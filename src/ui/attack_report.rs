@@ -72,6 +72,11 @@ fn render_loading_complete(mode: OutputMode, total: usize) -> String {
     )
 }
 
+fn render_unrecognized_lines(mode: OutputMode, count: usize) -> String {
+    let msg = format!("Note: {count} unrecognized line(s) were skipped");
+    theme::colored(&msg, MessageKind::Warning, mode.is_plain())
+}
+
 fn render_hardnested_loaded(mode: OutputMode, count: usize, targets: &[(u32, u8)]) -> Vec<String> {
     let plain = mode.is_plain();
     let mut lines = Vec::new();
@@ -269,6 +274,10 @@ impl Ui {
 
     pub fn show_loading_complete(&self, total: usize) {
         self.write_line(&render_loading_complete(self.opts.mode, total));
+    }
+
+    pub fn show_unrecognized_lines(&self, count: usize) {
+        self.write_line(&render_unrecognized_lines(self.opts.mode, count));
     }
 
     pub fn show_hardnested_loaded(&self, count: usize, targets: &[(u32, u8)]) {

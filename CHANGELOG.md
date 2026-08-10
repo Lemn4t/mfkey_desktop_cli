@@ -17,6 +17,8 @@
 - HardNested progress is now shown as a single, in-place status line with a
   per-target counter ("HardNested [k/N] …") in the interactive UI, instead of
   scrolling the raw engine table.
+- Unrecognized log lines are now reported ("N unrecognized line(s) were
+  skipped") instead of being dropped silently.
 
 ### Fixed
 
