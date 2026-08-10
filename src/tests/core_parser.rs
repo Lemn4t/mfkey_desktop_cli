@@ -120,18 +120,24 @@ Sec 0 key A cuid 7a962390 nt0 12345678 ks0 abcdef01 par0 0000 dist 0
     }
 
     let mut loaded = Vec::new();
-    let (nonces, hardnested_detected) = load_nested_nonces(&path, |idx, uid, name| {
+    let set = load_nested_nonces(&path, |idx, uid, name| {
         loaded.push((idx, uid, name.to_string()))
     })
     .unwrap();
 
     let _ = std::fs::remove_file(&path);
 
-    assert_eq!(nonces.len(), 2);
-    assert!(hardnested_detected);
+    assert_eq!(set.nonces.len(), 2);
+    assert!(set.hardnested_detected);
     assert_eq!(loaded.len(), 2);
-    assert_eq!(nonces[0].attack, AttackType::Mfkey32);
-    assert_eq!(nonces[1].attack, AttackType::StaticEncrypted);
+    assert_eq!(set.nonces[0].attack, AttackType::Mfkey32);
+    assert_eq!(set.nonces[1].attack, AttackType::StaticEncrypted);
+
+    assert_eq!(set.hardnested.len(), 2);
+    assert_eq!(set.hardnested[0].uid, 0x7a962390);
+    assert_eq!(set.hardnested[0].nt0, 0x00000000);
+    assert_eq!(set.hardnested[0].ks0, 0x5b615df5);
+    assert_eq!(set.hardnested[0].par0, 0b0110);
 }
 
 #[test]
@@ -146,10 +152,11 @@ fn load_nested_nonces_reports_no_hardnested_when_none_present() {
         f.write_all(content.as_bytes()).unwrap();
     }
 
-    let (nonces, hardnested_detected) = load_nested_nonces(&path, |_, _, _| {}).unwrap();
+    let set = load_nested_nonces(&path, |_, _, _| {}).unwrap();
 
     let _ = std::fs::remove_file(&path);
 
-    assert_eq!(nonces.len(), 1);
-    assert!(!hardnested_detected);
+    assert_eq!(set.nonces.len(), 1);
+    assert!(!set.hardnested_detected);
+    assert!(set.hardnested.is_empty());
 }

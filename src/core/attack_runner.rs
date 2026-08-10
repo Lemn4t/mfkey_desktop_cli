@@ -33,9 +33,11 @@ pub fn run_file_attack(
     ui.show_loading(file_path);
 
     let ui_for_load = Arc::clone(ui);
-    let (nonces, hardnested_detected) = parser::load_nested_nonces(file_path, |idx, uid, name| {
+    let nonce_set = parser::load_nested_nonces(file_path, |idx, uid, name| {
         ui_for_load.show_nonce_loaded(idx, uid, name);
     })?;
+    let nonces = nonce_set.nonces;
+    let hardnested_detected = nonce_set.hardnested_detected;
 
     if nonces.is_empty() {
         if hardnested_detected {

@@ -59,6 +59,15 @@ pub struct Nonce {
     pub p64b: u32,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct HardNestedNonce {
+    pub key_idx: u8,
+    pub uid: u32,
+    pub nt0: u32,
+    pub ks0: u32,
+    pub par0: u8,
+}
+
 impl Nonce {
     pub fn to_c(&self) -> CNonce {
         CNonce {

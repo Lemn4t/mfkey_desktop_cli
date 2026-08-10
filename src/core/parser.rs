@@ -1,5 +1,6 @@
 use crate::core::ffi::{AttackType, prng_successor};
-use crate::core::model::Nonce;
+use crate::core::model::{HardNestedNonce, Nonce};
+use crate::core::nonce_set::NonceSet;
 use crate::ext::result::Rslt;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -99,6 +100,26 @@ fn parse_nested_line(tokens: &[&str]) -> Option<Nonce> {
     Some(nonce)
 }
 
+fn parse_hardnested_line(tokens: &[&str]) -> Option<HardNestedNonce> {
+    let sector_num: i64 = token_after(tokens, "Sec").and_then(|s| s.parse::<i64>().ok())?;
+    let key_type: &str = token_after(tokens, "key")?;
+    let key_b = key_type.eq_ignore_ascii_case("B");
+    let key_idx = (sector_num * 2 + if key_b { 1 } else { 0 }) as u8;
+
+    let uid = token_after(tokens, "cuid").and_then(parse_hex_u32)?;
+    let nt0 = token_after(tokens, "nt0").and_then(parse_hex_u32)?;
+    let ks0 = token_after(tokens, "ks0").and_then(parse_hex_u32)?;
+    let par0 = token_after(tokens, "par0").map(binary_string_to_int)?;
+
+    Some(HardNestedNonce {
+        key_idx,
+        uid,
+        nt0,
+        ks0,
+        par0,
+    })
+}
+
 fn is_hardnested_line(trimmed: &str, tokens: &[&str]) -> bool {
     tokens.contains(&"Sec")
         && tokens.contains(&"key")
@@ -109,7 +130,42 @@ fn is_hardnested_line(trimmed: &str, tokens: &[&str]) -> bool {
         && !trimmed.contains("dist")
 }
 
-pub fn load_nested_nonces<P, F>(path: P, mut on_loaded: F) -> Rslt<(Vec<Nonce>, bool)>
+enum LineKind {
+    Mfkey32,
+    Nested,
+    HardNested,
+    Unknown,
+}
+
+fn classify(trimmed: &str, tokens: &[&str]) -> LineKind {
+    let is_mfkey32 = tokens.contains(&"nr0")
+        && tokens.contains(&"ar0")
+        && tokens.contains(&"nr1")
+        && tokens.contains(&"ar1");
+    if is_mfkey32 {
+        return LineKind::Mfkey32;
+    }
+    if is_hardnested_line(trimmed, tokens) {
+        return LineKind::HardNested;
+    }
+    if trimmed.contains("dist 0") {
+        return LineKind::Nested;
+    }
+    LineKind::Unknown
+}
+
+fn record_nonce<F: FnMut(usize, u32, &str)>(
+    nonces: &mut Vec<Nonce>,
+    nonce: Nonce,
+    on_loaded: &mut F,
+) {
+    let uid = nonce.uid;
+    let name = nonce.attack_name();
+    nonces.push(nonce);
+    on_loaded(nonces.len(), uid, name);
+}
+
+pub fn load_nested_nonces<P, F>(path: P, mut on_loaded: F) -> Rslt<NonceSet>
 where
     P: AsRef<Path>,
     F: FnMut(usize, u32, &str),
@@ -117,8 +173,7 @@ where
     let file = File::open(path)?;
     let reader = BufReader::new(file);
 
-    let mut nonces: Vec<Nonce> = Vec::new();
-    let mut hardnested_detected = false;
+    let mut set = NonceSet::default();
 
     for line_res in reader.lines() {
         let line = match line_res {
@@ -133,33 +188,28 @@ where
 
         let tokens: Vec<&str> = trimmed.split_whitespace().collect();
 
-        let is_mfkey32 = tokens.contains(&"nr0")
-            && tokens.contains(&"ar0")
-            && tokens.contains(&"nr1")
-            && tokens.contains(&"ar1");
-
-        if !is_mfkey32 && is_hardnested_line(trimmed, &tokens) {
-            hardnested_detected = true;
-            continue;
-        }
-
-        let parsed = if is_mfkey32 {
-            parse_mfkey32_line(&tokens)
-        } else if trimmed.contains("dist 0") {
-            parse_nested_line(&tokens)
-        } else {
-            None
-        };
-
-        if let Some(nonce) = parsed {
-            let uid = nonce.uid;
-            let name = nonce.attack_name();
-            nonces.push(nonce);
-            on_loaded(nonces.len(), uid, name);
+        match classify(trimmed, &tokens) {
+            LineKind::Mfkey32 => {
+                if let Some(nonce) = parse_mfkey32_line(&tokens) {
+                    record_nonce(&mut set.nonces, nonce, &mut on_loaded);
+                }
+            }
+            LineKind::Nested => {
+                if let Some(nonce) = parse_nested_line(&tokens) {
+                    record_nonce(&mut set.nonces, nonce, &mut on_loaded);
+                }
+            }
+            LineKind::HardNested => {
+                set.hardnested_detected = true;
+                if let Some(hn) = parse_hardnested_line(&tokens) {
+                    set.hardnested.push(hn);
+                }
+            }
+            LineKind::Unknown => {}
         }
     }
 
-    Ok((nonces, hardnested_detected))
+    Ok(set)
 }
 
 #[cfg(test)]
