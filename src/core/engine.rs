@@ -112,6 +112,35 @@ fn process_one(ctx: &AttackContext, nonce: &Nonce, ks2: u32, in_: u32) -> TaskRe
     }
 }
 
+fn derive_ks_mfkey32(nonce: &Nonce) -> (u32, u32) {
+    (nonce.ar0_enc ^ nonce.p64, 0)
+}
+
+fn derive_ks_static_nested(nonce: &Nonce) -> (u32, u32) {
+    (nonce.ks1_2_enc, nonce.uid_xor_nt1)
+}
+
+fn derive_ks_static_encrypted(nonce: &Nonce) -> (u32, u32) {
+    (nonce.ks1_1_enc, nonce.uid_xor_nt0)
+}
+
+#[derive(Clone, Copy)]
+struct AttackPass {
+    attack: AttackType,
+    derive_ks: fn(&Nonce) -> (u32, u32),
+}
+
+const SIMPLE_PASSES: [AttackPass; 2] = [
+    AttackPass {
+        attack: AttackType::Mfkey32,
+        derive_ks: derive_ks_mfkey32,
+    },
+    AttackPass {
+        attack: AttackType::StaticNested,
+        derive_ks: derive_ks_static_nested,
+    },
+];
+
 fn run_pass(
     ctx: &AttackContext,
     state: &mut AttackState,
@@ -170,9 +199,8 @@ fn process_uid_group(
     let results: Vec<TaskResult> = group
         .par_iter()
         .map(|nonce| {
-            let ks_enc = nonce.ks1_1_enc;
-            let nt_xor_uid = nonce.uid_xor_nt0;
-            process_one(ctx, nonce, ks_enc, nt_xor_uid)
+            let (ks2, in_) = derive_ks_static_encrypted(nonce);
+            process_one(ctx, nonce, ks2, in_)
         })
         .collect();
 
@@ -209,13 +237,9 @@ pub fn run_attack(
 
     state.reporter.begin_progress(nonces.len());
 
-    run_pass(&ctx, state, nonces, AttackType::Mfkey32, |nonce| {
-        (nonce.ar0_enc ^ nonce.p64, 0)
-    });
-
-    run_pass(&ctx, state, nonces, AttackType::StaticNested, |nonce| {
-        (nonce.ks1_2_enc, nonce.uid_xor_nt1)
-    });
+    for pass in SIMPLE_PASSES {
+        run_pass(&ctx, state, nonces, pass.attack, pass.derive_ks);
+    }
 
     let mut dict_outputs: Vec<DictOutput> = Vec::new();
     let mut candidate_total_count: usize = 0;
