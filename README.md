@@ -12,6 +12,8 @@
 [![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)](<https://en.wikipedia.org/wiki/C_(programming_language)>)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=for-the-badge)](https://github.com/phntm-lab/mfkey_desktop_cli/releases)
 
+[![Discord](https://img.shields.io/discord/1533709767359332422?style=for-the-badge&logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.phntm-lab.ru)
+
 </div>
 
 ---
