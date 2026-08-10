@@ -80,3 +80,7 @@ unsafe extern "C" {
     pub fn crapto1_recover(n: *const CNonce, ks2: u32, in_: u32, cb: *const CCallbacks) -> bool;
     pub fn prng_successor(x: u32, n: u32) -> u32;
 }
+
+#[cfg(test)]
+#[path = "../tests/ffi_contract.rs"]
+mod tests;

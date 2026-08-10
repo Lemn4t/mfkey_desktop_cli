@@ -12,6 +12,7 @@ fn main() {
 
     let mut build = cc::Build::new();
     build.file("csrc/crapto1.c");
+    build.file("csrc/ffi_contract.c");
     build.include("csrc");
 
     if target_env == "msvc" {
@@ -44,6 +45,7 @@ fn main() {
     build.compile("crapto1");
 
     println!("cargo:rerun-if-changed=csrc/crapto1.c");
+    println!("cargo:rerun-if-changed=csrc/ffi_contract.c");
     println!("cargo:rerun-if-changed=csrc/crapto1.h");
     println!("cargo:rerun-if-changed=csrc/parity.h");
 
