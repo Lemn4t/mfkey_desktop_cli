@@ -35,7 +35,7 @@ Ready-made builds for Windows, Linux and macOS are available on the releases pag
   - `static_nested` — attacking cards with a predictable (static) nested PRNG
   - `static_encrypted` — attacking cards where only encrypted nonces were collected
   - `hard_nested` — attacking hardened cards (Crypto-1 with a hardened PRNG) from collected HardNested nonces
-- 🤖 **`--auto` mode** — talks to a connected Flipper Zero directly over USB: detects the port, pulls `.mfkey32.log` / `.nested.log` files, runs the attack, and uploads recovered keys and candidate dictionaries back to the device — fully hands-free
+- 🤖 **Hands-free live mode** — talks to a connected Flipper Zero directly: detects the device, pulls `.mfkey32.log` / `.nested.log` files, runs the attack, and uploads recovered keys and candidate dictionaries back. Works over **USB** (`--auto`) or **Bluetooth LE** (`--ble`), with an interactive picker when several Flippers are in reach
 - 🛑 Graceful `Ctrl+C` interruption at any point
 - 💾 Saves both confirmed keys and candidate key dictionaries to disk
 
@@ -60,8 +60,10 @@ The attack type is detected automatically from the file contents — no need to 
 ### Automatic mode (live device)
 
 ```bash
-mfkey_desktop_cli --auto
-mfkey_desktop_cli --auto --port COM3
+mfkey_desktop_cli --auto               # over USB
+mfkey_desktop_cli --auto --port COM3   # USB, explicit port
+mfkey_desktop_cli --ble                # over Bluetooth LE
+mfkey_desktop_cli --ble --device <ID>  # BLE, explicit device id
 ```
 
 See [Automatic mode](#-automatic-mode---auto) below for details.
@@ -77,12 +79,18 @@ OPTIONS:
   --version             Show version information
   --accept-disclaimer   Accept the disclaimer/terms of use non-interactively (see Disclaimer below)
 
-AUTO MODE (Flipper Zero over USB):
+AUTO MODE — USB (Flipper Zero over USB-CDC):
   --auto            Find a connected Flipper, pull *.mfkey32.log / *.nested.log
                      from /ext/nfc, run the attack, and upload recovered keys
                      to /ext/nfc/assets/mf_classic_dict_user.nfc
   --port <PORT>     (optional) Serial port of the Flipper (skips auto-detect)
-  --out <DIR>       (optional) Directory for local copies of logs/keys
+
+AUTO MODE — BLE (Flipper Zero over Bluetooth LE):
+  --ble             Same as --auto, but over Bluetooth LE. The Flipper must be
+                     paired in your operating system's Bluetooth settings first.
+  --device <ID>     (optional) BLE device id of the Flipper (skips the picker)
+
+  --out <DIR>       (optional, both modes) Directory for local copies of logs/keys
 ```
 
 ---
@@ -108,6 +116,23 @@ mfkey_desktop_cli --auto --port /dev/cu.usbmodemflip_XXXX1  # macOS
 
 > [!NOTE]
 > Before running `--auto`, close qFlipper, the Web Updater, and any serial terminals — they hold the port exclusively and will block the connection.
+
+> [!TIP]
+> When more than one Flipper is connected, `--auto` shows an interactive picker (a numbered list in `--plain`). Pass `--port <PORT>` to skip it.
+
+### Over Bluetooth LE (`--ble`)
+
+```bash
+mfkey_desktop_cli --ble                 # scan, pick, and run
+mfkey_desktop_cli --ble --device <ID>   # skip the picker
+```
+
+`--ble` runs the exact same flow (download → attack → upload) as `--auto`, but over Bluetooth LE instead of USB.
+
+> [!IMPORTANT]
+> **Pair the Flipper in your operating system's Bluetooth settings first**, and make sure Bluetooth is on and the Flipper is in range. The tool connects to an already-paired device — it cannot perform pairing/bonding itself.
+
+If several paired Flippers are found, it shows the same picker (or a numbered list in `--plain`); use `--device <ID>` to select one non-interactively.
 
 ### What it does, step by step
 
