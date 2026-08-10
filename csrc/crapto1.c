@@ -1,4 +1,5 @@
 #include "crapto1.h"
+#include <stdlib.h>
 #include <string.h>
 
 #include "parity.h"
@@ -172,7 +173,7 @@ static uint32_t napi_lfsr_rollback_word(struct Crypto1State *s, uint32_t in, int
   return ret;
 }
 
-static void crypto1_get_lfsr(struct Crypto1State *state, uint8_t *lfsr_out6) {
+static void mfkey_state_to_key6(struct Crypto1State *state, uint8_t *lfsr_out6) {
   int i;
   uint64_t lfsr_value = 0;
   for (i = 23; i >= 0; --i) {
@@ -202,7 +203,7 @@ static inline int check_state(struct Crypto1State *t, RecoverCtx *ctx) {
     crypt_word_noret(t, n->uid_xor_nt1, 0);
     crypt_word_noret(t, n->nr1_enc, 1);
     if (n->ar1_enc == (crypt_word(t) ^ n->p64b)) {
-      crypto1_get_lfsr(&temp, key6);
+      mfkey_state_to_key6(&temp, key6);
       if (ctx->cb->found_key)
         ctx->cb->found_key(key6, ctx->cb->user);
       return 1;
@@ -212,7 +213,7 @@ static inline int check_state(struct Crypto1State *t, RecoverCtx *ctx) {
     rollback_word_noret(t, n->uid_xor_nt1, 0);
     if (n->ks1_1_enc == crypt_word_ret(t, n->uid_xor_nt0, 0)) {
       rollback_word_noret(&temp, n->uid_xor_nt1, 0);
-      crypto1_get_lfsr(&temp, key6);
+      mfkey_state_to_key6(&temp, key6);
       if (ctx->cb->found_key)
         ctx->cb->found_key(key6, ctx->cb->user);
       return 1;
@@ -224,7 +225,7 @@ static inline int check_state(struct Crypto1State *t, RecoverCtx *ctx) {
       if ((crypt_word_par(&temp, n->uid_xor_nt0, 0, n->nt0, &local_parity_keystream_bits) ==
            n->ks1_1_enc) &&
           (local_parity_keystream_bits == n->par_1)) {
-        crypto1_get_lfsr(t, key6);
+        mfkey_state_to_key6(t, key6);
         if (ctx->cb->candidate_key)
           ctx->cb->candidate_key(key6, n->key_idx, ctx->cb->user);
       }
@@ -541,4 +542,92 @@ bool crapto1_recover(const CNonce *n, uint32_t ks2, uint32_t in, const CCallback
   }
 
   return found;
+}
+
+void crypto1_init(struct Crypto1State *state, uint64_t key) {
+  if (state == NULL)
+    return;
+  state->odd = 0;
+  state->even = 0;
+  for (int i = 47; i > 0; i -= 2) {
+    state->odd = state->odd << 1 | BIT(key, (i - 1) ^ 7);
+    state->even = state->even << 1 | BIT(key, i ^ 7);
+  }
+}
+
+void crypto1_deinit(struct Crypto1State *state) {
+  state->odd = 0;
+  state->even = 0;
+}
+
+struct Crypto1State *crypto1_create(uint64_t key) {
+  struct Crypto1State *state = calloc(sizeof(*state), sizeof(uint8_t));
+  if (!state)
+    return NULL;
+  crypto1_init(state, key);
+  return state;
+}
+
+void crypto1_destroy(struct Crypto1State *state) { free(state); }
+
+void crypto1_get_lfsr(struct Crypto1State *state, uint64_t *lfsr) {
+  int i;
+  for (*lfsr = 0, i = 23; i >= 0; --i) {
+    *lfsr = *lfsr << 1 | BIT(state->odd, i ^ 3);
+    *lfsr = *lfsr << 1 | BIT(state->even, i ^ 3);
+  }
+}
+
+uint8_t crypto1_byte(struct Crypto1State *s, uint8_t in, int is_encrypted) {
+  uint8_t ret = 0;
+  ret |= crypto1_bit(s, BIT(in, 0), is_encrypted) << 0;
+  ret |= crypto1_bit(s, BIT(in, 1), is_encrypted) << 1;
+  ret |= crypto1_bit(s, BIT(in, 2), is_encrypted) << 2;
+  ret |= crypto1_bit(s, BIT(in, 3), is_encrypted) << 3;
+  ret |= crypto1_bit(s, BIT(in, 4), is_encrypted) << 4;
+  ret |= crypto1_bit(s, BIT(in, 5), is_encrypted) << 5;
+  ret |= crypto1_bit(s, BIT(in, 6), is_encrypted) << 6;
+  ret |= crypto1_bit(s, BIT(in, 7), is_encrypted) << 7;
+  return ret;
+}
+
+uint32_t crypto1_word(struct Crypto1State *s, uint32_t in, int is_encrypted) {
+  uint32_t ret = 0;
+  for (int i = 0; i < 32; i++) {
+    ret |= (uint32_t)crypto1_bit(s, BEBIT(in, i), is_encrypted) << (24 ^ i);
+  }
+  return ret;
+}
+
+uint8_t lfsr_rollback_bit(struct Crypto1State *s, uint32_t in, int fb) {
+  int out;
+  uint8_t ret;
+  uint32_t t;
+
+  s->odd &= 0xffffff;
+  t = s->odd;
+  s->odd = s->even;
+  s->even = t;
+
+  out = s->even & 1;
+  out ^= LF_POLY_EVEN & (s->even >>= 1);
+  out ^= LF_POLY_ODD & s->odd;
+  out ^= !!in;
+  out ^= (ret = crypto1_filter(s->odd)) & (!!fb);
+
+  s->even |= (evenparity32(out)) << 23;
+  return ret;
+}
+
+uint8_t lfsr_rollback_byte(struct Crypto1State *s, uint32_t in, int fb) {
+  uint8_t ret = 0;
+  ret |= lfsr_rollback_bit(s, BIT(in, 7), fb) << 7;
+  ret |= lfsr_rollback_bit(s, BIT(in, 6), fb) << 6;
+  ret |= lfsr_rollback_bit(s, BIT(in, 5), fb) << 5;
+  ret |= lfsr_rollback_bit(s, BIT(in, 4), fb) << 4;
+  ret |= lfsr_rollback_bit(s, BIT(in, 3), fb) << 3;
+  ret |= lfsr_rollback_bit(s, BIT(in, 2), fb) << 2;
+  ret |= lfsr_rollback_bit(s, BIT(in, 1), fb) << 1;
+  ret |= lfsr_rollback_bit(s, BIT(in, 0), fb) << 0;
+  return ret;
 }
