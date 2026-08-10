@@ -349,6 +349,10 @@ impl crate::core::reporter::Reporter for Ui {
     fn found_key(&self, key: &crate::core::model::MfClassicKey) {
         self.show_found_key(key);
     }
+
+    fn hardnested_line(&self, line: &str) {
+        self.write_line(line);
+    }
 }
 
 #[cfg(test)]

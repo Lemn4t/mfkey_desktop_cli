@@ -36,15 +36,8 @@ fn run_fixture(fixture: &str, dict_dir: &Path) -> FileAttackOutcome {
         mode: OutputMode::Plain,
     }));
     let stop = Arc::new(AtomicBool::new(false));
-    run_file_attack(
-        &ui,
-        &stop,
-        &example(fixture),
-        Some(&dict_dir.to_string_lossy()),
-        None,
-        false,
-    )
-    .expect("run_file_attack should succeed on a readable fixture")
+    run_file_attack(&ui, &stop, &example(fixture), Some(&dict_dir.to_string_lossy()))
+        .expect("run_file_attack should succeed on a readable fixture")
 }
 
 fn found_hex(result: &AttackOutcome) -> Vec<String> {
@@ -62,7 +55,7 @@ fn mfkey32_recovers_single_known_key() {
             assert_eq!(r.candidate_total_count, 0);
             assert!(r.dict_outputs.is_empty());
         }
-        FileAttackOutcome::NoUsableNonces { .. } => panic!("expected Ran outcome"),
+        FileAttackOutcome::NoUsableNonces => panic!("expected Ran outcome"),
     }
 
     let _ = fs::remove_dir_all(&dir);
@@ -79,7 +72,7 @@ fn static_nested_recovers_single_known_key() {
             assert_eq!(r.candidate_total_count, 0);
             assert!(r.dict_outputs.is_empty());
         }
-        FileAttackOutcome::NoUsableNonces { .. } => panic!("expected Ran outcome"),
+        FileAttackOutcome::NoUsableNonces => panic!("expected Ran outcome"),
     }
 
     let _ = fs::remove_dir_all(&dir);
@@ -123,25 +116,9 @@ fn static_encrypted_produces_frozen_candidate_dictionary() {
                 "dictionary content (bytes + order) must be identical to baseline"
             );
         }
-        FileAttackOutcome::NoUsableNonces { .. } => panic!("expected Ran outcome"),
+        FileAttackOutcome::NoUsableNonces => panic!("expected Ran outcome"),
     }
 
     let _ = fs::remove_dir_all(&dir);
 }
 
-#[test]
-fn hardnested_log_is_detected_and_yields_no_usable_nonces() {
-    let dir = temp_dict_dir("hard_nested");
-    let outcome = run_fixture("hard_nested.log", &dir);
-
-    match outcome {
-        FileAttackOutcome::NoUsableNonces {
-            hardnested_detected,
-        } => {
-            assert!(hardnested_detected, "HardNested nonces must be detected");
-        }
-        FileAttackOutcome::Ran(_) => panic!("expected NoUsableNonces outcome"),
-    }
-
-    let _ = fs::remove_dir_all(&dir);
-}

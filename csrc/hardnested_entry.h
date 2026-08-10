@@ -13,8 +13,7 @@ typedef struct {
 } HnNonce;
 
 typedef struct {
-  void (*progress)(uint32_t nonces_done, float brute_force, void *user);
-  int (*should_stop)(void *user);
+  void (*line)(const char *text, void *user);
   void *user;
 } HnCallbacks;
 

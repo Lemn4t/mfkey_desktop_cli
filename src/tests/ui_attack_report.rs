@@ -55,24 +55,6 @@ fn loading_complete_plain_matches_exact_text() {
     );
 }
 
-#[test]
-fn hardnested_unsupported_mentions_path_and_skip_suffix() {
-    let msg = render_hardnested_unsupported(OutputMode::Plain, Some("a.log"), true);
-    assert!(msg.contains("a.log"));
-    assert!(msg.ends_with(", skipping."));
-
-    let msg_no_skip = render_hardnested_unsupported(OutputMode::Plain, None, false);
-    assert!(!msg_no_skip.contains("a.log"));
-    assert!(msg_no_skip.ends_with("(yet)."));
-}
-
-#[test]
-fn hardnested_note_mentions_path_when_given() {
-    let msg = render_hardnested_note(OutputMode::Plain, Some("b.log"));
-    assert!(msg.contains("b.log"));
-    let msg_none = render_hardnested_note(OutputMode::Plain, None);
-    assert!(msg_none.contains("this file"));
-}
 
 #[test]
 fn start_plain_is_single_line() {

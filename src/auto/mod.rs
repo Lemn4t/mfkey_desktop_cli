@@ -110,8 +110,6 @@ fn run_attacks_over_logs(
             stop,
             &log_str,
             Some(dict_dir.as_str()),
-            Some(&log_str),
-            true,
         ) {
             Ok(o) => o,
             Err(e) => {
@@ -121,12 +119,8 @@ fn run_attacks_over_logs(
         };
 
         let result = match outcome {
-            FileAttackOutcome::NoUsableNonces {
-                hardnested_detected,
-            } => {
-                if !hardnested_detected {
-                    ui.show_error(&format!("No nonces loaded from {log_str}, skipping."));
-                }
+            FileAttackOutcome::NoUsableNonces => {
+                ui.show_error(&format!("No nonces loaded from {log_str}, skipping."));
                 continue;
             }
             FileAttackOutcome::Ran(r) => r,

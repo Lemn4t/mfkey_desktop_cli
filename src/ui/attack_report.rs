@@ -72,33 +72,6 @@ fn render_loading_complete(mode: OutputMode, total: usize) -> String {
     )
 }
 
-fn render_hardnested_unsupported(
-    mode: OutputMode,
-    context: Option<&str>,
-    skipping: bool,
-) -> String {
-    let suffix = if skipping { ", skipping." } else { "." };
-    let msg = match context {
-        Some(path) => format!(
-            "HardNested nonces detected in {path} — this attack is not supported (yet){suffix}"
-        ),
-        None => {
-            format!("HardNested nonces detected — this attack is not supported (yet){suffix}")
-        }
-    };
-    theme::colored_bold(&msg, MessageKind::Warning, mode.is_plain())
-}
-
-fn render_hardnested_note(mode: OutputMode, context: Option<&str>) -> String {
-    let msg = match context {
-        Some(path) => format!(
-            "Note: HardNested nonces were also found in {path} and were skipped — that attack is not supported (yet)."
-        ),
-        None => "Note: HardNested nonces were also found in this file and were skipped — that attack is not supported (yet).".to_string(),
-    };
-    theme::colored(&msg, MessageKind::Warning, mode.is_plain())
-}
-
 fn render_start(mode: OutputMode) -> Vec<String> {
     let plain = mode.is_plain();
     if plain {
@@ -264,18 +237,6 @@ impl Ui {
 
     pub fn show_loading_complete(&self, total: usize) {
         self.write_line(&render_loading_complete(self.opts.mode, total));
-    }
-
-    pub fn show_hardnested_unsupported(&self, context: Option<&str>, skipping: bool) {
-        self.write_err_line(&render_hardnested_unsupported(
-            self.opts.mode,
-            context,
-            skipping,
-        ));
-    }
-
-    pub fn show_hardnested_note(&self, context: Option<&str>) {
-        self.write_line(&render_hardnested_note(self.opts.mode, context));
     }
 
     pub fn show_start(&self) {

@@ -19,8 +19,6 @@ pub fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) -> Rslt<()> {
         &stop,
         &params.input_file,
         params.dict_output_dir.as_deref(),
-        None,
-        false,
     ) {
         Ok(o) => o,
         Err(e) => {
@@ -33,12 +31,8 @@ pub fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) -> Rslt<()> {
     };
 
     let result = match outcome {
-        FileAttackOutcome::NoUsableNonces {
-            hardnested_detected,
-        } => {
-            if !hardnested_detected {
-                ui.show_error("Failed to load nonces from file!");
-            }
+        FileAttackOutcome::NoUsableNonces => {
+            ui.show_error("Failed to load nonces from file!");
             return Err("no usable nonces".into());
         }
         FileAttackOutcome::Ran(r) => r,

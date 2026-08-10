@@ -15,16 +15,12 @@ fn plain_ui() -> Arc<Ui> {
 }
 
 #[test]
-fn aggregates_keys_and_skips_hardnested() {
+fn aggregates_keys_across_logs() {
     let dir = std::env::temp_dir().join(format!("mfkey_auto_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
 
-    let logs = [
-        example("mfkey32.log"),
-        example("static_nested.log"),
-        example("hard_nested.log"),
-    ];
+    let logs = [example("mfkey32.log"), example("static_nested.log")];
     let ui = plain_ui();
     let stop = Arc::new(AtomicBool::new(false));
 

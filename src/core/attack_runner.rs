@@ -1,3 +1,4 @@
+use crate::core::hardnested::HardNestedSolver;
 use crate::core::model::MfClassicKey;
 use crate::core::outcome::AttackOutcome;
 use crate::core::parser;
@@ -12,7 +13,7 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 pub enum FileAttackOutcome {
-    NoUsableNonces { hardnested_detected: bool },
+    NoUsableNonces,
     Ran(AttackOutcome),
 }
 
@@ -21,8 +22,6 @@ pub fn run_file_attack(
     stop: &Arc<AtomicBool>,
     file_path: &str,
     dict_output_dir: Option<&str>,
-    hardnested_context: Option<&str>,
-    hardnested_skipping: bool,
 ) -> Rslt<FileAttackOutcome> {
     ui.show_loading(file_path);
 
@@ -31,47 +30,58 @@ pub fn run_file_attack(
         ui_for_load.show_nonce_loaded(idx, uid, name);
     })?;
     let nonces = nonce_set.nonces;
-    let hardnested_detected = nonce_set.hardnested_detected;
+    let hardnested = nonce_set.hardnested;
 
-    if nonces.is_empty() {
-        if hardnested_detected {
-            ui.show_hardnested_unsupported(hardnested_context, hardnested_skipping);
-        }
-        return Ok(FileAttackOutcome::NoUsableNonces {
-            hardnested_detected,
-        });
+    if nonces.is_empty() && hardnested.is_empty() {
+        return Ok(FileAttackOutcome::NoUsableNonces);
     }
 
-    ui.show_loading_complete(nonces.len());
-    if hardnested_detected {
-        ui.show_hardnested_note(hardnested_context);
-    }
+    let total = nonces.len() + hardnested.len();
+    ui.show_loading_complete(total);
     ui.show_start();
 
-    let mut save_dict =
-        |uid: u32, keys: &[(u8, MfClassicKey)], dir: Option<&str>| -> Option<String> {
-            let path = candidate_dict_path(uid, dir);
-            let path_str = path.to_string_lossy().to_string();
-            match write_candidate_dict(&path, keys) {
-                Ok(()) => Some(path_str),
-                Err(_) => {
-                    ui.show_error(&format!("Failed to create dictionary file: {}", path_str));
-                    None
-                }
-            }
-        };
-
     let reporter: Arc<dyn Reporter> = ui.clone();
-    let outcome = Crapto1Solver::run(
-        reporter,
-        Arc::clone(stop),
-        &nonces,
-        dict_output_dir,
-        &mut save_dict,
-    );
+
+    let mut outcome = if nonces.is_empty() {
+        AttackOutcome {
+            found_keys: Vec::new(),
+            candidate_total_count: 0,
+            dict_outputs: Vec::new(),
+        }
+    } else {
+        let mut save_dict =
+            |uid: u32, keys: &[(u8, MfClassicKey)], dir: Option<&str>| -> Option<String> {
+                let path = candidate_dict_path(uid, dir);
+                let path_str = path.to_string_lossy().to_string();
+                match write_candidate_dict(&path, keys) {
+                    Ok(()) => Some(path_str),
+                    Err(_) => {
+                        ui.show_error(&format!("Failed to create dictionary file: {}", path_str));
+                        None
+                    }
+                }
+            };
+
+        Crapto1Solver::run(
+            Arc::clone(&reporter),
+            Arc::clone(stop),
+            &nonces,
+            dict_output_dir,
+            &mut save_dict,
+        )
+    };
+
+    if !hardnested.is_empty() {
+        let hardnested_keys = HardNestedSolver::run(&hardnested, stop, reporter.as_ref());
+        for key in hardnested_keys {
+            if !outcome.found_keys.contains(&key) {
+                outcome.found_keys.push(key);
+            }
+        }
+    }
 
     ui.show_summary(
-        nonces.len(),
+        total,
         outcome.found_keys.len(),
         outcome.candidate_total_count,
     );

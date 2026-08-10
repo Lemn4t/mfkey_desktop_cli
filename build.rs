@@ -62,7 +62,6 @@ fn main() {
     hn.file(format!("{vendor}/hardnested/hardnested_bitarray_core.c"));
     hn.file(format!("{vendor}/hardnested/hardnested_bruteforce.c"));
     hn.file(format!("{vendor}/hardnested/tables.c"));
-    hn.file(format!("{vendor}/pm3/ui.c"));
     hn.file(format!("{vendor}/pm3/util.c"));
     hn.file(format!("{vendor}/pm3/util_posix.c"));
     hn.file(format!("{vendor}/pm3/commonutil.c"));
