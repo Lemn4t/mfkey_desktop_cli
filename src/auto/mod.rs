@@ -2,10 +2,10 @@ mod upload;
 
 use crate::core::attack_runner::{self, FileAttackOutcome};
 use crate::ext::result::{ResultExt, Rslt};
-use crate::flipper::{FlipperSession, find};
+use crate::flipper::{FlipperSession, ble, find};
 use crate::ui::Ui;
 
-use crate::params::AutoParams;
+use crate::params::{AutoParams, AutoTransport};
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -29,8 +29,8 @@ fn resolve_logs_dir(params: &AutoParams) -> Rslt<PathBuf> {
     Ok(logs_dir)
 }
 
-fn discover_port(ui: &Ui, params: &AutoParams) -> Rslt<String> {
-    if let Some(p) = params.port.as_deref() {
+fn discover_port(ui: &Ui, port: Option<&str>) -> Rslt<String> {
+    if let Some(p) = port {
         ui.show_flipper_port(p);
         return Ok(p.to_string());
     }
@@ -173,12 +173,81 @@ fn maybe_delete_remote_logs(ui: &Ui, sess: &mut FlipperSession, remote_logs: &[S
     }
 }
 
+fn discover_ble_device(ui: &Ui, device: Option<&str>) -> Rslt<String> {
+    if let Some(d) = device {
+        ui.show_ble_device(d);
+        return Ok(d.to_string());
+    }
+
+    ui.show_scanning_ble();
+    let devices = ble::scanner::list_ble_devices_blocking().context("BLE scan failed")?;
+
+    let ble_label = |d: &ble::scanner::BleDevice| -> String {
+        let rssi = d
+            .rssi
+            .map(|v| format!("{v} dBm"))
+            .unwrap_or_else(|| "?".into());
+        let state = if d.paired { "paired" } else { "in range" };
+        format!("{}  (rssi {rssi}, {state})", d.name)
+    };
+
+    match devices.len() {
+        0 => Err(
+            "No Flipper Zero found over BLE.\n  Make sure Bluetooth is on and the Flipper is paired in your OS Bluetooth settings, then try again.\n  You can also specify it directly: --ble --device <ID>"
+                .into(),
+        ),
+        1 => {
+            let d = devices.into_iter().next().unwrap();
+            ui.show_ble_device(&d.name);
+            Ok(d.id)
+        }
+        _ => {
+            let labels: Vec<String> = devices.iter().map(ble_label).collect();
+            match ui.select_index("Multiple Flipper (BLE) devices found — select one:", &labels) {
+                Some(idx) => {
+                    let d = devices.into_iter().nth(idx).unwrap();
+                    ui.show_ble_device(&d.name);
+                    Ok(d.id)
+                }
+                None => {
+                    let list = devices
+                        .iter()
+                        .map(|d| format!("  - {}  [id: {}]", d.name, d.id))
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    Err(format!(
+                        "Multiple Flipper (BLE) devices found; specify one with --ble --device <ID>:\n{list}"
+                    )
+                    .into())
+                }
+            }
+        }
+    }
+}
+
+fn open_session(ui: &Ui, params: &AutoParams) -> Rslt<FlipperSession> {
+    match &params.transport {
+        AutoTransport::Usb { port } => {
+            let port = discover_port(ui, port.as_deref())?;
+            ui.show_opening_session();
+            FlipperSession::open(&port).context("cannot open RPC session")
+        }
+        AutoTransport::Ble { device } => {
+            let id = discover_ble_device(ui, device.as_deref())?;
+            ui.show_opening_session();
+            let transport = ble::connection::connect_ble_blocking(&id).context(
+                "cannot connect over BLE (ensure the Flipper is paired in your OS Bluetooth settings and in range)",
+            )?;
+            FlipperSession::from_transport(Box::new(transport))
+                .context("cannot open RPC session over BLE")
+        }
+    }
+}
+
 pub fn run_auto(ui: Arc<Ui>, params: AutoParams, stop: Arc<AtomicBool>) -> Rslt<()> {
     let logs_dir = resolve_logs_dir(&params)?;
-    let port = discover_port(&ui, &params)?;
 
-    ui.show_opening_session();
-    let mut sess = FlipperSession::open(&port).context("cannot open RPC session")?;
+    let mut sess = open_session(&ui, &params)?;
     ui.show_session_ready();
 
     let (local_logs, remote_logs) = download_target_logs(&ui, &mut sess, &logs_dir)?;

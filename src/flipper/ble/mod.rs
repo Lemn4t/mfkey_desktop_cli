@@ -11,5 +11,3 @@ pub const TX_CHAR: Uuid = uuid!("19ed82ae-ed21-4c9d-4145-228e61fe0000");
 pub const RX_CHAR: Uuid = uuid!("19ed82ae-ed21-4c9d-4145-228e62fe0000");
 pub const OVERFLOW_CHAR: Uuid = uuid!("19ed82ae-ed21-4c9d-4145-228e63fe0000");
 pub const RPC_STATE_CHAR: Uuid = uuid!("19ed82ae-ed21-4c9d-4145-228e64fe0000");
-
-pub const FLIPPER_NAME_PREFIX: &str = "Flipper ";

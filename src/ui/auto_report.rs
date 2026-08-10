@@ -19,6 +19,16 @@ impl Ui {
         self.status_value_line(&prefix, port, MessageKind::Success);
     }
 
+    pub fn show_scanning_ble(&self) {
+        let text = self.with_glyph(glyph::ARROW, "Scanning for Flipper Zero over BLE...");
+        self.status_line(&text, MessageKind::Info);
+    }
+
+    pub fn show_ble_device(&self, label: &str) {
+        let prefix = self.with_glyph(glyph::CHECK, "Flipper (BLE):");
+        self.status_value_line(&prefix, label, MessageKind::Success);
+    }
+
     pub fn show_opening_session(&self) {
         let text = self.with_glyph(glyph::ARROW, "Opening RPC session...");
         self.status_line(&text, MessageKind::Info);
