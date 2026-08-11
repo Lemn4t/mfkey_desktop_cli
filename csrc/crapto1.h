@@ -76,12 +76,10 @@ uint32_t prng_successor(uint32_t x, uint32_t n);
 struct Crypto1State;
 
 void crypto1_init(struct Crypto1State *state, uint64_t key);
-void crypto1_deinit(struct Crypto1State *state);
 struct Crypto1State *crypto1_create(uint64_t key);
 void crypto1_destroy(struct Crypto1State *state);
 void crypto1_get_lfsr(struct Crypto1State *state, uint64_t *lfsr);
 uint8_t crypto1_byte(struct Crypto1State *s, uint8_t in, int is_encrypted);
-uint32_t crypto1_word(struct Crypto1State *s, uint32_t in, int is_encrypted);
 uint8_t lfsr_rollback_bit(struct Crypto1State *s, uint32_t in, int fb);
 uint8_t lfsr_rollback_byte(struct Crypto1State *s, uint32_t in, int fb);
 

@@ -555,11 +555,6 @@ void crypto1_init(struct Crypto1State *state, uint64_t key) {
   }
 }
 
-void crypto1_deinit(struct Crypto1State *state) {
-  state->odd = 0;
-  state->even = 0;
-}
-
 struct Crypto1State *crypto1_create(uint64_t key) {
   struct Crypto1State *state = calloc(sizeof(*state), sizeof(uint8_t));
   if (!state)
@@ -588,14 +583,6 @@ uint8_t crypto1_byte(struct Crypto1State *s, uint8_t in, int is_encrypted) {
   ret |= crypto1_bit(s, BIT(in, 5), is_encrypted) << 5;
   ret |= crypto1_bit(s, BIT(in, 6), is_encrypted) << 6;
   ret |= crypto1_bit(s, BIT(in, 7), is_encrypted) << 7;
-  return ret;
-}
-
-uint32_t crypto1_word(struct Crypto1State *s, uint32_t in, int is_encrypted) {
-  uint32_t ret = 0;
-  for (int i = 0; i < 32; i++) {
-    ret |= (uint32_t)crypto1_bit(s, BEBIT(in, i), is_encrypted) << (24 ^ i);
-  }
   return ret;
 }
 
