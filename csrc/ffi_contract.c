@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include "crapto1.h"
+#include "hardnested_entry.h"
 
 size_t crapto1_cnonce_size(void) {
   return sizeof(CNonce);
@@ -58,6 +59,44 @@ size_t crapto1_cnonce_offset(int field) {
       return offsetof(CNonce, par_1);
     case 16:
       return offsetof(CNonce, par_2);
+    default:
+      return (size_t)-1;
+  }
+}
+
+size_t hn_nonce_size(void) {
+  return sizeof(HnNonce);
+}
+
+size_t hn_nonce_align(void) {
+  return _Alignof(HnNonce);
+}
+
+size_t hn_nonce_offset(int field) {
+  switch (field) {
+    case 0:
+      return offsetof(HnNonce, nt_enc);
+    case 1:
+      return offsetof(HnNonce, par);
+    default:
+      return (size_t)-1;
+  }
+}
+
+size_t hn_callbacks_size(void) {
+  return sizeof(HnCallbacks);
+}
+
+size_t hn_callbacks_align(void) {
+  return _Alignof(HnCallbacks);
+}
+
+size_t hn_callbacks_offset(int field) {
+  switch (field) {
+    case 0:
+      return offsetof(HnCallbacks, line);
+    case 1:
+      return offsetof(HnCallbacks, user);
     default:
       return (size_t)-1;
   }

@@ -46,6 +46,7 @@ fn main() {
 
     println!("cargo:rerun-if-changed=csrc/crapto1.c");
     println!("cargo:rerun-if-changed=csrc/ffi_contract.c");
+    println!("cargo:rerun-if-changed=csrc/hardnested_entry.h");
     println!("cargo:rerun-if-changed=csrc/crapto1.h");
     println!("cargo:rerun-if-changed=csrc/parity.h");
 
