@@ -204,7 +204,6 @@ where
                 }
             }
             LineKind::HardNested => {
-                set.hardnested_detected = true;
                 if let Some(hn) = parse_hardnested_line(&tokens) {
                     set.hardnested.push(hn);
                 }

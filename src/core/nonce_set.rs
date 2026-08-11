@@ -4,6 +4,5 @@ use crate::core::model::{HardNestedNonce, Nonce};
 pub struct NonceSet {
     pub nonces: Vec<Nonce>,
     pub hardnested: Vec<HardNestedNonce>,
-    pub hardnested_detected: bool,
     pub unrecognized: usize,
 }

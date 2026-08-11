@@ -96,7 +96,7 @@ fn load_nested_nonces_accepts_weak_nested_with_nonzero_dist() {
     assert_eq!(set.nonces.len(), 1);
     assert_eq!(set.nonces[0].attack, AttackType::StaticNested);
     assert_eq!(set.nonces[0].key_idx, 10);
-    assert!(!set.hardnested_detected);
+    assert!(set.hardnested.is_empty());
 }
 
 #[test]
@@ -173,7 +173,7 @@ Sec 0 key A cuid 7a962390 nt0 12345678 ks0 abcdef01 par0 0000 dist 0
     let _ = std::fs::remove_file(&path);
 
     assert_eq!(set.nonces.len(), 2);
-    assert!(set.hardnested_detected);
+    assert!(!set.hardnested.is_empty());
     assert_eq!(loaded.len(), 2);
     assert_eq!(set.nonces[0].attack, AttackType::Mfkey32);
     assert_eq!(set.nonces[1].attack, AttackType::StaticEncrypted);
@@ -202,6 +202,5 @@ fn load_nested_nonces_reports_no_hardnested_when_none_present() {
     let _ = std::fs::remove_file(&path);
 
     assert_eq!(set.nonces.len(), 1);
-    assert!(!set.hardnested_detected);
     assert!(set.hardnested.is_empty());
 }
