@@ -8,6 +8,7 @@
   (weak-PRNG nested collections) were previously ignored; they now run the nested
   attack just like the static case. The plaintext nonce is resolved by the Flipper
   firmware, so `dist` is not needed for recovery on the desktop side.
+- macOS Intel (x86_64) builds are published again alongside Apple Silicon.
 
 ### Changed
 
@@ -24,6 +25,9 @@
 - `--auto` now shows an upload progress bar for large files (the big
   `static_encrypted` candidate dictionaries), so long USB/BLE transfers no
   longer look frozen.
+- Writing large candidate dictionaries (the big `static_encrypted` files,
+  ~1M keys) is now buffered, so long saves no longer look like the tool has
+  stalled.
 
 ### Fixed
 
