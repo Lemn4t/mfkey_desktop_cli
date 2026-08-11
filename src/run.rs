@@ -1,6 +1,7 @@
 use crate::core::attack_runner::{self, FileAttackOutcome};
 use crate::core::model::save_keys_to_file;
 use crate::core::paths::display_path;
+use crate::core::reporter::Reporter;
 use crate::ext::result::Rslt;
 use crate::params::RunParams;
 use crate::ui::Ui;
@@ -14,8 +15,9 @@ pub fn run(ui: Arc<Ui>, params: RunParams, stop: Arc<AtomicBool>) -> Rslt<()> {
         params.dict_output_dir.as_deref(),
     );
 
+    let reporter: Arc<dyn Reporter> = ui.clone();
     let outcome = match attack_runner::run_file_attack(
-        &ui,
+        &reporter,
         &stop,
         &params.input_file,
         params.dict_output_dir.as_deref(),

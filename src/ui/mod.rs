@@ -441,6 +441,38 @@ impl Ui {
 }
 
 impl crate::core::reporter::Reporter for Ui {
+    fn loading(&self, file_path: &str) {
+        self.show_loading(file_path);
+    }
+
+    fn nonce_loaded(&self, index: usize, uid: u32, attack_type: &str) {
+        self.show_nonce_loaded(index, uid, attack_type);
+    }
+
+    fn unrecognized_lines(&self, count: usize) {
+        self.show_unrecognized_lines(count);
+    }
+
+    fn hardnested_loaded(&self, count: usize, targets: &[(u32, u8)]) {
+        self.show_hardnested_loaded(count, targets);
+    }
+
+    fn loading_complete(&self, total: usize) {
+        self.show_loading_complete(total);
+    }
+
+    fn attack_start(&self) {
+        self.show_start();
+    }
+
+    fn error(&self, msg: &str) {
+        self.show_error(msg);
+    }
+
+    fn summary(&self, total_nonces: usize, found_keys: usize, candidate_keys: usize) {
+        self.show_summary(total_nonces, found_keys, candidate_keys);
+    }
+
     fn begin_progress(&self, total_nonces: usize) {
         Ui::begin_progress(self, total_nonces);
     }

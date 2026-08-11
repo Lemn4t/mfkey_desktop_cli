@@ -1,6 +1,7 @@
 mod upload;
 
 use crate::core::attack_runner::{self, FileAttackOutcome};
+use crate::core::reporter::Reporter;
 use crate::ext::result::{ResultExt, Rslt};
 use crate::flipper::{FlipperSession, ble, find};
 use crate::ui::Ui;
@@ -121,6 +122,8 @@ fn run_attacks_over_logs(
     let mut all_keys: BTreeSet<String> = BTreeSet::new();
     let mut local_dicts: Vec<PathBuf> = Vec::new();
 
+    let reporter: Arc<dyn Reporter> = ui.clone();
+
     for log in local_logs {
         if stop.load(Ordering::SeqCst) {
             break;
@@ -130,7 +133,7 @@ fn run_attacks_over_logs(
         let dict_dir = logs_dir.to_string_lossy().to_string();
 
         let outcome = match attack_runner::run_file_attack(
-            ui,
+            &reporter,
             stop,
             &log_str,
             Some(dict_dir.as_str()),

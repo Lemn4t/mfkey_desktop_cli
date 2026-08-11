@@ -32,12 +32,17 @@ fn temp_dict_dir(tag: &str) -> PathBuf {
 }
 
 fn run_fixture(fixture: &str, dict_dir: &Path) -> FileAttackOutcome {
-    let ui = Arc::new(Ui::new(UiOptions {
+    let reporter: Arc<dyn crate::core::reporter::Reporter> = Arc::new(Ui::new(UiOptions {
         mode: OutputMode::Plain,
     }));
     let stop = Arc::new(AtomicBool::new(false));
-    run_file_attack(&ui, &stop, &example(fixture), Some(&dict_dir.to_string_lossy()))
-        .expect("run_file_attack should succeed on a readable fixture")
+    run_file_attack(
+        &reporter,
+        &stop,
+        &example(fixture),
+        Some(&dict_dir.to_string_lossy()),
+    )
+    .expect("run_file_attack should succeed on a readable fixture")
 }
 
 fn found_hex(result: &AttackOutcome) -> Vec<String> {

@@ -5,7 +5,6 @@ use crate::core::parser;
 use crate::core::reporter::Reporter;
 use crate::core::solver::Crapto1Solver;
 use crate::ext::result::Rslt;
-use crate::ui::Ui;
 use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -18,22 +17,22 @@ pub enum FileAttackOutcome {
 }
 
 pub fn run_file_attack(
-    ui: &Arc<Ui>,
+    reporter: &Arc<dyn Reporter>,
     stop: &Arc<AtomicBool>,
     file_path: &str,
     dict_output_dir: Option<&str>,
 ) -> Rslt<FileAttackOutcome> {
-    ui.show_loading(file_path);
+    reporter.loading(file_path);
 
-    let ui_for_load = Arc::clone(ui);
+    let reporter_for_load = Arc::clone(reporter);
     let nonce_set = parser::load_nested_nonces(file_path, |idx, uid, name| {
-        ui_for_load.show_nonce_loaded(idx, uid, name);
+        reporter_for_load.nonce_loaded(idx, uid, name);
     })?;
     let nonces = nonce_set.nonces;
     let hardnested = nonce_set.hardnested;
 
     if nonce_set.unrecognized > 0 {
-        ui.show_unrecognized_lines(nonce_set.unrecognized);
+        reporter.unrecognized_lines(nonce_set.unrecognized);
     }
 
     if nonces.is_empty() && hardnested.is_empty() {
@@ -48,14 +47,12 @@ pub fn run_file_attack(
                 targets.push(target);
             }
         }
-        ui.show_hardnested_loaded(hardnested.len(), &targets);
+        reporter.hardnested_loaded(hardnested.len(), &targets);
     }
 
     let total = nonces.len() + hardnested.len();
-    ui.show_loading_complete(total);
-    ui.show_start();
-
-    let reporter: Arc<dyn Reporter> = ui.clone();
+    reporter.loading_complete(total);
+    reporter.attack_start();
 
     let mut outcome = if nonces.is_empty() {
         AttackOutcome {
@@ -71,14 +68,14 @@ pub fn run_file_attack(
                 match write_candidate_dict(&path, keys) {
                     Ok(()) => Some(path_str),
                     Err(_) => {
-                        ui.show_error(&format!("Failed to create dictionary file: {}", path_str));
+                        reporter.error(&format!("Failed to create dictionary file: {}", path_str));
                         None
                     }
                 }
             };
 
         Crapto1Solver::run(
-            Arc::clone(&reporter),
+            Arc::clone(reporter),
             Arc::clone(stop),
             &nonces,
             dict_output_dir,
@@ -95,11 +92,7 @@ pub fn run_file_attack(
         }
     }
 
-    ui.show_summary(
-        total,
-        outcome.found_keys.len(),
-        outcome.candidate_total_count,
-    );
+    reporter.summary(total, outcome.found_keys.len(), outcome.candidate_total_count);
 
     Ok(FileAttackOutcome::Ran(outcome))
 }
