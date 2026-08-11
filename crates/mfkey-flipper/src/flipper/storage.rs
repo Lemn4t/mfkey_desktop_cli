@@ -112,6 +112,16 @@ impl FlipperSession {
         Ok(())
     }
 
+    pub fn upload_file(
+        &mut self,
+        path: &str,
+        data: &[u8],
+        on_progress: impl FnMut(usize, usize),
+    ) -> Result<()> {
+        let _ = self.storage_delete(path, false);
+        self.storage_write_with_progress(path, data, on_progress)
+    }
+
     pub fn storage_delete(&mut self, path: &str, recursive: bool) -> Result<()> {
         let req = pb_storage::DeleteRequest {
             path: path.to_string(),

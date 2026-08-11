@@ -1,4 +1,5 @@
 use crate::ui::Ui;
+use mfkey_core::core::keys::{merge_key_sets, parse_key_lines};
 use mfkey_core::ext::result::{ResultExt, Rslt};
 use mfkey_flipper::FlipperSession;
 use std::collections::BTreeSet;
@@ -9,30 +10,6 @@ use std::path::{Path, PathBuf};
 const ASSETS_DIR: &str = "/ext/nfc/assets";
 const RESULT_REMOTE_NAME: &str = "mf_classic_dict_user.nfc";
 const TRANSFER_BAR_THRESHOLD: usize = 64 * 1024;
-
-fn parse_existing_keys(data: &[u8]) -> BTreeSet<String> {
-    let mut set = BTreeSet::new();
-    for line in String::from_utf8_lossy(data).lines() {
-        let l = line.trim();
-        if !l.is_empty() {
-            set.insert(l.to_uppercase());
-        }
-    }
-    set
-}
-
-fn merge_key_sets(
-    existing: &BTreeSet<String>,
-    new: &BTreeSet<String>,
-) -> (usize, BTreeSet<String>) {
-    let mut merged = existing.clone();
-    let before = merged.len();
-    for k in new {
-        merged.insert(k.clone());
-    }
-    let added = merged.len() - before;
-    (added, merged)
-}
 
 pub fn upload_dicts(ui: &Ui, sess: &mut FlipperSession, local_dicts: &[PathBuf]) {
     if local_dicts.is_empty() {
@@ -68,14 +45,11 @@ pub fn upload_dicts(ui: &Ui, sess: &mut FlipperSession, local_dicts: &[PathBuf])
 
         let remote_dict = format!("{ASSETS_DIR}/{file_name}");
 
-        let _ = sess.storage_delete(&remote_dict, false);
-
         let show_progress = data.len() > TRANSFER_BAR_THRESHOLD;
         if show_progress {
             ui.begin_transfer(&file_name, data.len());
         }
-        let res =
-            sess.storage_write_with_progress(&remote_dict, &data, |sent, _| ui.update_transfer(sent));
+        let res = sess.upload_file(&remote_dict, &data, |sent, _| ui.update_transfer(sent));
         if show_progress {
             ui.end_transfer();
         }
@@ -121,7 +95,7 @@ pub fn merge_and_upload_keys(
 
     let existing_keys = existing
         .as_deref()
-        .map(parse_existing_keys)
+        .map(parse_key_lines)
         .unwrap_or_default();
     let before = existing_keys.len();
     let (added, final_keys) = merge_key_sets(&existing_keys, all_keys);
@@ -146,15 +120,13 @@ pub fn merge_and_upload_keys(
         ui.show_keys_saved_locally(&result_path);
     }
 
-    let _ = sess.storage_delete(&remote_out, false);
     ui.show_uploading_full_dict(&remote_out);
 
     let show_progress = upload.len() > TRANSFER_BAR_THRESHOLD;
     if show_progress {
         ui.begin_transfer(RESULT_REMOTE_NAME, upload.len());
     }
-    let res =
-        sess.storage_write_with_progress(&remote_out, &upload, |sent, _| ui.update_transfer(sent));
+    let res = sess.upload_file(&remote_out, &upload, |sent, _| ui.update_transfer(sent));
     if show_progress {
         ui.end_transfer();
     }
@@ -165,7 +137,3 @@ pub fn merge_and_upload_keys(
 
     Ok(())
 }
-
-#[cfg(test)]
-#[path = "../tests/auto_upload.rs"]
-mod tests;

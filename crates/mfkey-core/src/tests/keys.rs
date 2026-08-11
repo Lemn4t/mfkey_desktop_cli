@@ -1,20 +1,21 @@
 use super::*;
+use std::collections::BTreeSet;
 
 fn set(items: &[&str]) -> BTreeSet<String> {
     items.iter().map(|s| s.to_string()).collect()
 }
 
 #[test]
-fn parse_existing_keys_trims_uppercases_and_drops_blanks() {
+fn parse_key_lines_trims_uppercases_and_drops_blanks() {
     let data = b"aabbccddeeff\n  112233445566  \n\nAABBCCDDEEFF\n";
-    let parsed = parse_existing_keys(data);
+    let parsed = parse_key_lines(data);
     assert_eq!(parsed, set(&["AABBCCDDEEFF", "112233445566"]));
 }
 
 #[test]
-fn parse_existing_keys_on_empty_input_is_empty() {
-    assert!(parse_existing_keys(b"").is_empty());
-    assert!(parse_existing_keys(b"   \n\n  \n").is_empty());
+fn parse_key_lines_on_empty_input_is_empty() {
+    assert!(parse_key_lines(b"").is_empty());
+    assert!(parse_key_lines(b"   \n\n  \n").is_empty());
 }
 
 #[test]
