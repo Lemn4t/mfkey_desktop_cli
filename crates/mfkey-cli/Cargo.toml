@@ -1,0 +1,26 @@
+[package]
+name = "mfkey-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Desktop tool for recovering MIFARE Classic keys, modified to match Flipper Zero mfkey behavior."
+readme = "../../README.md"
+
+[[bin]]
+name = "mfkey_desktop_cli"
+path = "src/main.rs"
+
+[dependencies]
+mfkey-core = { path = "../mfkey-core" }
+mfkey-flipper = { path = "../mfkey-flipper" }
+dialoguer = "0.12.0"
+console = "0.16.4"
+indicatif = "0.18.6"
+colored = "3.1.1"
+ctrlc = "3.5.2"
+serde = { version = "1.0.229", features = ["derive"] }
+clap = { version = "4.6.6", features = ["derive"] }
+dirs = "6.0.0"
+yaml_serde = "0.10.4"

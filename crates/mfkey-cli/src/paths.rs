@@ -32,5 +32,5 @@ pub fn display_path(p: &std::path::Path) -> String {
 }
 
 #[cfg(test)]
-#[path = "../tests/core_paths.rs"]
+#[path = "tests/core_paths.rs"]
 mod tests;

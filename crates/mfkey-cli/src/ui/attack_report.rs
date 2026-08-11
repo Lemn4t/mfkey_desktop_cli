@@ -1,6 +1,6 @@
 use super::theme::{self, glyph};
 use super::{MessageKind, OutputMode, Ui};
-use crate::core::model::MfClassicKey;
+use mfkey_core::core::model::MfClassicKey;
 
 fn render_config(
     mode: OutputMode,

@@ -799,30 +799,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
-name = "mfkey_desktop_cli"
+name = "mfkey-cli"
 version = "1.0.8"
 dependencies = [
- "btleplug",
- "cc",
  "clap",
  "colored",
  "console",
  "ctrlc",
  "dialoguer",
  "dirs",
- "futures",
  "indicatif",
+ "mfkey-core",
+ "mfkey-flipper",
+ "serde",
+ "yaml_serde",
+]
+
+[[package]]
+name = "mfkey-core"
+version = "1.0.8"
+dependencies = [
+ "cc",
+ "rayon",
+]
+
+[[package]]
+name = "mfkey-flipper"
+version = "1.0.8"
+dependencies = [
+ "btleplug",
+ "futures",
  "once_cell",
  "prost",
  "prost-build",
  "protoc-bin-vendored",
- "rayon",
- "serde",
  "serialport",
  "thiserror 2.0.20",
  "tokio",
  "uuid",
- "yaml_serde",
 ]
 
 [[package]]

@@ -440,7 +440,7 @@ impl Ui {
     }
 }
 
-impl crate::core::reporter::Reporter for Ui {
+impl mfkey_core::core::reporter::Reporter for Ui {
     fn loading(&self, file_path: &str) {
         self.show_loading(file_path);
     }
@@ -497,7 +497,7 @@ impl crate::core::reporter::Reporter for Ui {
         );
     }
 
-    fn found_key(&self, key: &crate::core::model::MfClassicKey) {
+    fn found_key(&self, key: &mfkey_core::core::model::MfClassicKey) {
         self.show_found_key(key);
     }
 
@@ -509,7 +509,7 @@ impl crate::core::reporter::Reporter for Ui {
         self.hardnested_status(line);
     }
 
-    fn hardnested_result(&self, label: &str, key: Option<&crate::core::model::MfClassicKey>) {
+    fn hardnested_result(&self, label: &str, key: Option<&mfkey_core::core::model::MfClassicKey>) {
         self.show_hardnested_result(label, key);
     }
 

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 fn example(name: &str) -> PathBuf {
-    PathBuf::from(format!("{}/examples/{}", env!("CARGO_MANIFEST_DIR"), name))
+    PathBuf::from(format!("{}/../../examples/{}", env!("CARGO_MANIFEST_DIR"), name))
 }
 
 fn plain_ui() -> Arc<Ui> {

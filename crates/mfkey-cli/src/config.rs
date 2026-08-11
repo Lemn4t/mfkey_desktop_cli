@@ -1,6 +1,6 @@
-use crate::core::paths::config_path;
-use crate::ext::option::OptionExt;
-use crate::ext::result::{ResultExt, Rslt};
+use crate::paths::config_path;
+use mfkey_core::ext::option::OptionExt;
+use mfkey_core::ext::result::{ResultExt, Rslt};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;

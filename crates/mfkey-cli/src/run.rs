@@ -1,10 +1,10 @@
-use crate::core::attack_runner::{self, FileAttackOutcome};
-use crate::core::model::save_keys_to_file;
-use crate::core::paths::display_path;
-use crate::core::reporter::Reporter;
-use crate::ext::result::Rslt;
+use crate::paths::display_path;
 use crate::params::RunParams;
 use crate::ui::Ui;
+use mfkey_core::core::attack_runner::{self, FileAttackOutcome};
+use mfkey_core::core::model::save_keys_to_file;
+use mfkey_core::core::reporter::Reporter;
+use mfkey_core::ext::result::Rslt;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 

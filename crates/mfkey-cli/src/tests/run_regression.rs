@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 fn example(name: &str) -> String {
-    format!("{}/examples/{}", env!("CARGO_MANIFEST_DIR"), name)
+    format!("{}/../../examples/{}", env!("CARGO_MANIFEST_DIR"), name)
 }
 
 fn temp_dir(tag: &str) -> PathBuf {

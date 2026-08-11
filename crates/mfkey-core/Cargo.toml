@@ -1,0 +1,14 @@
+[package]
+name = "mfkey-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Core MIFARE Classic key-recovery engine (crapto1 + HardNested) for mfkey_desktop_cli."
+
+[dependencies]
+rayon = "1.12.0"
+
+[build-dependencies]
+cc = "1.4.2"

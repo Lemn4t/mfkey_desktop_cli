@@ -1,5 +1,5 @@
 use super::*;
-use crate::core::model::MfClassicKey;
+use mfkey_core::core::model::MfClassicKey;
 
 fn key(bytes: [u8; 6]) -> MfClassicKey {
     MfClassicKey::from_slice(&bytes)

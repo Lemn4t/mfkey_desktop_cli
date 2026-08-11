@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::ui::{OutputMode, Ui, UiOptions};
+use crate::core::reporter::{NullReporter, Reporter};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -16,7 +16,7 @@ fn fnv1a64(bytes: &[u8]) -> u64 {
 }
 
 fn example(name: &str) -> String {
-    format!("{}/examples/{}", env!("CARGO_MANIFEST_DIR"), name)
+    format!("{}/../../examples/{}", env!("CARGO_MANIFEST_DIR"), name)
 }
 
 fn temp_dict_dir(tag: &str) -> PathBuf {
@@ -32,9 +32,7 @@ fn temp_dict_dir(tag: &str) -> PathBuf {
 }
 
 fn run_fixture(fixture: &str, dict_dir: &Path) -> FileAttackOutcome {
-    let reporter: Arc<dyn crate::core::reporter::Reporter> = Arc::new(Ui::new(UiOptions {
-        mode: OutputMode::Plain,
-    }));
+    let reporter: Arc<dyn Reporter> = Arc::new(NullReporter);
     let stop = Arc::new(AtomicBool::new(false));
     run_file_attack(
         &reporter,

@@ -39,3 +39,24 @@ pub trait Reporter: Send + Sync {
 
     fn hardnested_end(&self) {}
 }
+
+#[cfg(test)]
+pub struct NullReporter;
+
+#[cfg(test)]
+impl Reporter for NullReporter {
+    fn begin_progress(&self, _total_nonces: usize) {}
+
+    fn update_progress(
+        &self,
+        _nonce_current: usize,
+        _nonce_total: usize,
+        _msb_current: usize,
+        _msb_total: usize,
+        _stage_progress: f32,
+        _uid: u32,
+    ) {
+    }
+
+    fn found_key(&self, _key: &MfClassicKey) {}
+}

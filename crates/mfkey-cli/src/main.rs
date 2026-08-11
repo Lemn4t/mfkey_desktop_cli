@@ -1,15 +1,12 @@
 mod auto;
-mod core;
-pub mod ext;
-mod flipper;
-mod generated_pb;
+mod config;
+mod disclaimer;
 mod params;
+mod paths;
 mod run;
 mod ui;
 
-pub use generated_pb::*;
-
-use crate::core::disclaimer::resolve_disclaimer_acceptance;
+use crate::disclaimer::resolve_disclaimer_acceptance;
 use crate::params::Params;
 use crate::ui::{Ui, UiOptions};
 use std::process;

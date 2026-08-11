@@ -1,6 +1,6 @@
-use crate::ext::result::{ResultExt, Rslt};
-use crate::flipper::FlipperSession;
 use crate::ui::Ui;
+use mfkey_core::ext::result::{ResultExt, Rslt};
+use mfkey_flipper::FlipperSession;
 use std::collections::BTreeSet;
 use std::fs;
 use std::io::{BufWriter, Write};

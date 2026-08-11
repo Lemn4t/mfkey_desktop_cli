@@ -1,10 +1,10 @@
 mod upload;
 
-use crate::core::attack_runner::{self, FileAttackOutcome};
-use crate::core::reporter::Reporter;
-use crate::ext::result::{ResultExt, Rslt};
-use crate::flipper::{FlipperSession, ble, find};
 use crate::ui::Ui;
+use mfkey_core::core::attack_runner::{self, FileAttackOutcome};
+use mfkey_core::core::reporter::Reporter;
+use mfkey_core::ext::result::{ResultExt, Rslt};
+use mfkey_flipper::{FlipperSession, ble, find};
 
 use crate::params::{AutoParams, AutoTransport};
 use std::collections::BTreeSet;
