@@ -803,7 +803,6 @@ name = "mfkey_desktop_cli"
 version = "1.0.8"
 dependencies = [
  "btleplug",
- "bytes",
  "cc",
  "clap",
  "colored",
