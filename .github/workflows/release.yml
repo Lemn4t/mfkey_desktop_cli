@@ -27,11 +27,11 @@ jobs:
             target: x86_64-unknown-linux-gnu
             bin_ext: ""
           # Intel
-          #   - os_name: macos
-          #     arch: x86_64
-          #     runner: macos-13
-          #     target: x86_64-apple-darwin
-          #     bin_ext: ""
+          - os_name: macos
+            arch: x86_64
+            runner: macos-13
+            target: x86_64-apple-darwin
+            bin_ext: ""
           # Apple Silicon
           - os_name: macos
             arch: aarch64
