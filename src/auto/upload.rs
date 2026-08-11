@@ -3,7 +3,7 @@ use crate::flipper::FlipperSession;
 use crate::ui::Ui;
 use std::collections::BTreeSet;
 use std::fs;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 const ASSETS_DIR: &str = "/ext/nfc/assets";
@@ -101,11 +101,13 @@ pub fn merge_and_upload_keys(
 
     let result_path = logs_dir.join(RESULT_REMOTE_NAME);
     {
-        let mut f =
+        let f =
             fs::File::create(&result_path).with_context(|| format!("create {result_path:?}"))?;
+        let mut writer = BufWriter::new(f);
         for k in all_keys {
-            writeln!(f, "{k}").context("write keys")?;
+            writeln!(writer, "{k}").context("write keys")?;
         }
+        writer.flush().context("write keys")?;
     }
     ui.show_keys_saved(&result_path);
 

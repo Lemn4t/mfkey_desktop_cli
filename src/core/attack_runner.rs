@@ -7,7 +7,7 @@ use crate::core::solver::Crapto1Solver;
 use crate::ext::result::Rslt;
 use crate::ui::Ui;
 use std::fs;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
@@ -113,10 +113,12 @@ fn candidate_dict_path(uid: u32, output_dir: Option<&str>) -> PathBuf {
 }
 
 fn write_candidate_dict(path: &Path, keys: &[(u8, MfClassicKey)]) -> std::io::Result<()> {
-    let mut file = fs::File::create(path)?;
+    let file = fs::File::create(path)?;
+    let mut writer = BufWriter::new(file);
     for (key_idx, k) in keys {
-        let _ = writeln!(file, "{:02X}{}", key_idx, k.to_hex());
+        writeln!(writer, "{:02X}{}", key_idx, k.to_hex())?;
     }
+    writer.flush()?;
     Ok(())
 }
 
