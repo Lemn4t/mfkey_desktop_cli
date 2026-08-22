@@ -12,7 +12,7 @@
 [![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)](<https://en.wikipedia.org/wiki/C_(programming_language)>)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=for-the-badge)](https://github.com/phntm-lab/mfkey_desktop_cli/releases)
 
-[![Discord](https://img.shields.io/discord/1533709767359332422?style=for-the-badge&logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.phntm-lab.ru)
+[![Telegram](https://img.shields.io/endpoint?url=https%3A%2F%2Ftg.sumanjay.workers.dev%2Fphntmlab&style=for-the-badge&logo=telegram&logoColor=white&label=Telegram&color=5865F2)](https://t.me/phntmlab)
 
 </div>
 
@@ -220,13 +220,13 @@ The binary will be in `target/release/`.
 
 ## 🧩 How it works
 
-| Layer                 | Language     | Responsibility                                              |
-| --------------------- | ------------ | ------------------------------------------------------------ |
-| Recovery core           | **C**        | LFSR state recovery, MSB-table search (crapto1-based); HardNested bitslice brute force |
-| Attack engine & parser | **Rust**     | Nonce parsing, attack orchestration, progress reporting        |
-| FFI bridge             | **Rust ↔ C** | Passing structures and callbacks between the two layers        |
-| Flipper RPC (USB)      | **Rust**     | Serial transport, protobuf framing, Storage read/write/delete   |
-| CLI & UI               | **Rust**     | Argument parsing (clap), console output, progress bar          |
+| Layer                  | Language     | Responsibility                                                                         |
+| ---------------------- | ------------ | -------------------------------------------------------------------------------------- |
+| Recovery core          | **C**        | LFSR state recovery, MSB-table search (crapto1-based); HardNested bitslice brute force |
+| Attack engine & parser | **Rust**     | Nonce parsing, attack orchestration, progress reporting                                |
+| FFI bridge             | **Rust ↔ C** | Passing structures and callbacks between the two layers                                |
+| Flipper RPC (USB)      | **Rust**     | Serial transport, protobuf framing, Storage read/write/delete                          |
+| CLI & UI               | **Rust**     | Argument parsing (clap), console output, progress bar                                  |
 
 **Crypto-1** is the proprietary stream cipher NXP built into MIFARE Classic cards for authentication. **crapto1** is the open-source library (from the Proxmark3/RfidResearchGroup project) that exploits known cryptographic weaknesses in Crypto-1 to recover keys — this is what the C core in this repo is based on. For **hardened** cards (which randomize their nonces to defeat the classic nested attack), the tool ships the Proxmark3 **HardNested** bitslice attack, adapted to run on the HardNested nonces Flipper Zero writes to `.nested.log`; it shares the same Crypto-1 primitives and runs in both single-file and `--auto` modes. In `--auto` mode, the tool also speaks the Flipper Zero's **Protobuf RPC** protocol over USB-CDC — it starts an RPC session and uses `Storage*` commands to list, read, write, and delete files on the device.
 
